@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Skill(workflows:test:generate-automation-from-testcases)",
+      "Skill(workflows:test:generate-automation-from-testcases:*)",
+      "mcp__claude_ai_Google_Drive__search_files",
+      "mcp__claude_ai_Google_Drive__create_file",
+      "mcp__claude_ai_Google_Drive__list_recent_files",
+      "Read(//Users/hangvu/.claude/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/hangvu/Desktop/VTIT/claude_tpcoms",
+      "/tmp",
+      "/private/tmp"
+    ]
+  }
+}

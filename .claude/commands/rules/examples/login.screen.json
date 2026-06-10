@@ -1,0 +1,56 @@
+{
+  "screen": "LoginPage",
+  "url": "/admin/authentication",
+  "framework": "playwright",
+  "lastVerified": "2026-05-29",
+  "elements": {
+    "emailInput": {
+      "primary": "getByLabel('Email Address')",
+      "fallback": "input[name='email']",
+      "action": "type",
+      "stability": "medium",
+      "verifiedStates": ["loaded"],
+      "note": "Label 'Email Address' — medium vì label có thể i18n"
+    },
+    "passwordInput": {
+      "primary": "getByLabel('Password')",
+      "fallback": "input[name='password']",
+      "action": "type",
+      "stability": "medium",
+      "verifiedStates": ["loaded"],
+      "note": "type='password' — verify masked theo TC_LOGIN_004"
+    },
+    "rememberMeCheckbox": {
+      "primary": "getByRole('checkbox', { name: 'Remember me' })",
+      "fallback": "input[name='remember']",
+      "action": "check",
+      "stability": "medium",
+      "verifiedStates": ["loaded"],
+      "note": "Mặc định unchecked (TC_LOGIN_005)"
+    },
+    "loginButton": {
+      "primary": "getByRole('button', { name: 'Login' })",
+      "fallback": "button[type='submit']",
+      "action": "click",
+      "stability": "high",
+      "verifiedStates": ["loaded"],
+      "note": ""
+    },
+    "forgotPasswordLink": {
+      "primary": "getByRole('link', { name: 'Forgot Password?' })",
+      "fallback": "a[href*='forgot']",
+      "action": "click",
+      "stability": "medium",
+      "verifiedStates": ["loaded"],
+      "note": ""
+    },
+    "errorAlert": {
+      "primary": "locator('.alert-danger')",
+      "fallback": "getByRole('alert')",
+      "action": "assert",
+      "stability": "low",
+      "verifiedStates": ["after-invalid-login"],
+      "note": "⚠️ low: dựa class .alert-danger. CHỈ hiện sau khi submit sai (TC_LOGIN_010..015). Đề xuất team thêm data-testid cho alert."
+    }
+  }
+}

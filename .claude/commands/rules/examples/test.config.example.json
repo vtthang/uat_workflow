@@ -1,0 +1,14 @@
+{
+  "environments": {
+    "dev":     { "baseURL": "https://dev.crm.example.com" },
+    "staging": { "baseURL": "https://staging.crm.example.com" },
+    "prod":    { "baseURL": "https://crm.anhtester.com" }
+  },
+  "accounts": {
+    "admin": { "username": "admin@example.com", "password": "${ADMIN_PASSWORD}", "role": "admin" },
+    "user":  { "username": "user@example.com",  "password": "${USER_PASSWORD}",  "role": "user" },
+    "guest": { "username": "guest@example.com", "password": "${GUEST_PASSWORD}", "role": "guest" }
+  },
+  "activeEnv": "staging",
+  "timeouts": { "slowEnv": false }
+}
