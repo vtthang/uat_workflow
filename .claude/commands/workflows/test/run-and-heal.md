@@ -36,43 +36,34 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
 
 ### Bước 2 — Chạy Test
 
-1. Chạy từng TC (hoặc từng file) bằng Playwright TypeScript:
+1. Chạy **toàn bộ suite đúng 1 lần** — không dừng khi gặp fail:
    ```bash
-   npx playwright test <file> --headed
+   npx playwright test <file|dir> --headed --reporter=list
    ```
 
-2. **PASS** → ghi nhận ✅, chuyển sang TC tiếp theo.
+2. Đọc stdout output: dòng có `✗` chứa tên test fail → extract TC ID theo pattern `TC-[A-Z0-9-]+` → đưa vào danh sách cần heal. Dòng có `✓` → ghi ✅.
 
-3. **FAIL** → retry tối đa **2 lần** (không sửa code giữa các lần):
-   ```bash
-   npx playwright test <file> --headed   # lần 1 (đã fail)
-   npx playwright test <file> --headed   # retry 1
-   npx playwright test <file> --headed   # retry 2
-   ```
-   - Retry PASS → ghi ✅, tiếp tục.
-   - Sau 2 retry vẫn FAIL → **mark FAILED, chạy TC tiếp theo** (không dừng toàn bộ).
+3. **Heal từng TC FAIL** (tuần tự, KHÔNG chạy lại toàn suite):
+   - Đọc log → phân tích root cause → sửa code
+   - Chạy lại **chỉ TC đó** bằng `--grep`:
+     ```bash
+     npx playwright test --headed --grep "TC-XX"
+     ```
+   - PASS → ✅, chuyển sang TC fail tiếp theo
+   - Vẫn FAIL → sửa thêm → chạy lại lần 2 (tối đa **2 lần sửa/TC**)
+   - Sau 2 lần vẫn FAIL → **mark FAILED vĩnh viễn, chuyển TC tiếp theo ngay**
 
 4. **Khi mark FAILED:**
-   - Chụp screenshot tại bước fail (nếu chưa có) → lưu `evidence/<TC_ID>/FAIL_<step>.png`
-   - Ghi root cause ngắn gọn vào `task.md`:
-     ```
-     ❌ XTBV_42: Assertion fail — status trả về "Chờ duyệt" thay vì "Đã từ chối"
-     ```
-   - Ghi **FAIL** vào cột kết quả file Excel (Bước 5)
-   - **Tiếp tục chạy TC kế tiếp ngay** — không hỏi user, không dừng.
+   - Ghi root cause ngắn gọn vào `task.md`
+   - **Tiếp tục TC kế tiếp ngay** — không hỏi user, không dừng, không chạy lại suite
+
+> **Hard cap:** Tổng tối đa **10 lần sửa code** trong toàn bộ workflow (đếm qua mọi TC). Vượt cap → mark toàn bộ TC còn lại là FAIL, chuyển sang Bước 4.
 
 ---
 
 ### Bước 3 — Verify Stability
 
-Với mỗi TC đã PASS, chạy thêm 1 lần nữa để xác nhận không flaky:
-
-```bash
-npx playwright test <file> --headed
-```
-
-- PASS → ✅ stable
-- FAIL → áp dụng lại quy trình Bước 2 (retry 2 lần → nếu vẫn FAIL thì mark FAILED)
+Bỏ qua — **1 lần PASS là đủ**. Không chạy lại TC đã PASS.
 
 ---
 
@@ -88,14 +79,15 @@ Theo checklist Definition of Done trong `CLAUDE.md`:
 
 ---
 
-### Bước 5 — Ghi P/F vào file TC gốc
+### Bước 5 — Ghi kết quả vào file testcase `.md`
 
-Nếu có file `.xlsx` từ `task.md` (mục Handoff):
-
-1. Mở bằng `exceljs` (TypeScript), tìm cột kết quả theo TC ID.
-2. Ghi: **PASS** / **FAIL** / **SKIP** + link evidence.
-3. **KHÔNG đổi data/format khác**, chỉ ghi đúng cột kết quả.
-4. Save lại file gốc. Báo rõ đã ghi N dòng.
+Đọc file `.md` từ `task.md` (mục Handoff), với mỗi TC:
+- Tìm dòng `#### TC-XX`
+- Thêm hoặc cập nhật marker kết quả inline:
+  - PASS → `#### TC-XX: <tên> — **✅ PASS**`
+  - FAIL → `#### TC-XX: <tên> — **❌ FAIL** — <root cause ngắn gọn>`
+  - SKIP → `#### TC-XX: <tên> — **⏭️ SKIP**`
+- Dùng `Edit` tool ghi thẳng vào file `.md`, **không tạo file mới**.
 
 ---
 

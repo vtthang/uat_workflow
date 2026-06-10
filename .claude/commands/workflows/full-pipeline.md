@@ -178,7 +178,7 @@ Ghi vào `pipeline_report.md`:
 Chạy tất cả file test từ Phase 2 mà không hỏi:
 
 ```bash
-npx playwright test tests/ --headed
+npx playwright test tests/ --headed --reporter=list
 ```
 
 ### 3B. Xử lý kết quả — Rule E3 (bắt buộc)
@@ -198,9 +198,12 @@ Không chạy lại TC PASS để "verify stable" — 1 lần PASS là đủ.
 - Xóa debug log, console.log
 - Xóa file debug tạm trong `/tmp/`
 
-### 3E. Ghi P/F vào file TC gốc
-- Nếu có `.xlsx` → ghi PASS/FAIL/SKIP + link evidence
-- KHÔNG đổi format khác
+### 3E. Ghi kết quả vào file testcase `.md`
+- Tìm dòng `#### TC-XX` → thêm marker inline:
+  - PASS → `#### TC-XX: <tên> — **✅ PASS**`
+  - FAIL → `#### TC-XX: <tên> — **❌ FAIL** — <root cause>`
+  - SKIP → `#### TC-XX: <tên> — **⏭️ SKIP**`
+- Dùng `Edit` tool ghi thẳng vào `.md`, không tạo file mới
 
 Ghi vào `pipeline_report.md`:
 ```

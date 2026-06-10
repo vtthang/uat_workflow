@@ -49,7 +49,20 @@ TPcoms_UAT/              ← root (ID cố định)
 
 ## Các bước thực hiện
 
-### Bước 1 — Sinh HTML report
+### Bước 1 — Kiểm tra evidence (theo `report_rules.md § 5`)
+
+Trước khi gen report, scan `evidence/<env>/<portal>/<module>/<feature>/` và log những gì còn thiếu (không dừng, chỉ ghi nhận):
+
+- Mỗi TC có `TC-XX_network-log.json`?
+- TC xem danh sách: có `TC-XX_data-mapping.json` + `TC-XX_api-response.json`?
+- TC tìm kiếm: có `TC-XX_search-count.json` + `TC-XX_api-response.json`?
+- TC lọc: có `TC-XX_filter-count.json` + `TC-XX_api-response.json`?
+
+Ghi thiếu vào `pipeline_report.md` dưới dạng cảnh báo ⚠️, sau đó tiếp tục.
+
+---
+
+### Bước 2 — Sinh HTML report
 
 ```bash
 npx ts-node scripts/generate-report.ts <mdPath> <env> "<portal>"
@@ -59,7 +72,7 @@ Kiểm tra output file tồn tại trong `report/`. Nếu lỗi → dừng, báo
 
 ---
 
-### Bước 2 — Tạo cấu trúc thư mục trên Drive
+### Bước 3 — Tạo cấu trúc thư mục trên Drive
 
 Sử dụng **Google Drive MCP** (`mcp__claude_ai_Google_Drive__*`).
 
@@ -77,7 +90,7 @@ Thứ tự tạo từng tầng (search trước → tạo nếu chưa có):
 
 ---
 
-### Bước 3 — Upload HTML report
+### Bước 4 — Upload HTML report
 
 Đọc file HTML đã sinh bằng `Read` tool → lấy toàn bộ nội dung.
 
@@ -95,7 +108,7 @@ Ghi lại Drive file URL trả về.
 
 ---
 
-### Bước 4 — Xoá local files
+### Bước 5 — Xoá local files
 
 Chỉ xoá sau khi upload thành công (có file ID trả về):
 
@@ -110,7 +123,7 @@ Không xoá nếu upload chưa có file ID (tránh mất data khi lỗi).
 
 ---
 
-### Bước 5 — Report kết quả
+### Bước 6 — Report kết quả
 
 Báo user:
 
