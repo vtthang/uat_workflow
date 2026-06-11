@@ -13,7 +13,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
 |---|---|---|
 | Path file test hoặc thư mục | User cung cấp hoặc đọc từ `task.md` (mục Handoff) | ⭐ Bắt buộc |
 | Tech stack / lệnh chạy | Đọc từ `task.md` (mục Handoff) hoặc user chỉ định | ⭐ Bắt buộc |
-| File TC gốc (.xlsx) để ghi P/F | Đọc từ `task.md` (mục Handoff) hoặc user cung cấp | Tùy chọn |
+| File testcase `.md` để ghi P/F | Đọc từ `task.md` (mục Handoff) | Tùy chọn |
 
 **Ưu tiên đọc `task.md`** nếu có (do `/generate-automation-from-testcases` để lại). Thiếu input bắt buộc → hỏi user trước khi chạy.
 
@@ -27,7 +27,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
 2. Lấy từ mục **Handoff**:
    - Tech stack và lệnh chạy
    - Danh sách file test cần chạy
-   - Path file TC gốc (để ghi P/F)
+   - Path file testcase `.md` (để ghi P/F)
    - TC nào đang tạm SKIP (thiếu file/điều kiện)
 3. Nếu không có `task.md` → hỏi user cung cấp path file test và tech stack.
 4. Xác nhận nhanh với user: *"Tôi sẽ chạy N file test: [danh sách]. Tiếp tục?"* — **chỉ hỏi 1 lần**, không hỏi thêm trong quá trình chạy.
@@ -116,7 +116,7 @@ Cảnh báo locator low-confidence: [nếu có]
 ## Output
 - Test files đã PASS stable (≥ 2 lần)
 - `task.md` cập nhật đầy đủ
-- File TC gốc (.xlsx) đã ghi P/F
+- File testcase `.md` đã ghi P/F
 - Evidence screenshots (`evidence/<TC_ID>/`)
 - Báo cáo PASS/FAIL/SKIP
 

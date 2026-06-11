@@ -227,23 +227,37 @@ await newsReviewPage.breadcrumbNav.click(); // outfocus → error hiện ra
    - **Test 1 field validation** → fill hợp lệ mọi field khác để cô lập (mục 2).
    - **Case gọi API** → bắt request/response, assert status + body (mục 3).
    - **Case trim** → bắt request, đọc payload, assert giá trị đã/chưa trim (mục 4). KHÔNG đoán qua UI.
-   - **API Monitoring** (mục 12) — **BẮT BUỘC** cho mọi test có action gọi API:
-     - Setup `apiLog` + `responseMap` listener trong `beforeEach`
-     - Sau mỗi action chính: gọi `assertNoDuplicateApiCall(apiLog)` — phát hiện double-submit
-     - Bắt response cụ thể: assert UI phản ánh đúng status + body từ server (200 → toast thành công; 400 → error message từ server, không hardcode)
+   - **API Monitoring** (mục 12) — **BẮT BUỘC cho MỌI describe block**, không trừ case nào:
+     - Dùng utility **`src/utils/ApiMonitor.ts`** (có sẵn trong project). Import `setupApiMonitor`, `teardownApiMonitor`, `assertNoDuplicateApiCall`, `ApiLogEntry`.
+     - **Khai báo ngoài các test** (describe scope):
+       ```typescript
+       const EVIDENCE_DIR = 'evidence/uat/admin/<module>/<function>';
+       const apiLog: ApiLogEntry[] = [];
+       // isMainApi = URL + method — KHÔNG dùng URL đơn lẻ
+       const isMainApi = (res: { url(): string; request(): { method(): string } }) =>
+         /\/api\/endpoint/i.test(res.url()) && res.request().method() === 'POST';
+       ```
+     - **`test.beforeEach`**: `apiLog.length = 0; setupApiMonitor(page, apiLog, isMainApi);`
+     - **`test.afterEach`**: `await teardownApiMonitor(apiLog, testInfo, EVIDENCE_DIR);`
+       → Ghi **1 file** `<slug>_api-calls.json` cho **mọi TC** (cả PASS lẫn FAIL).
+       Mỗi entry: `{ method, url, status, time }`. Riêng main API entry có thêm `responseBody`.
+       Filter `e.responseBody != null` để tìm main API calls khi cần đọc lại.
+       → Nếu FAIL: attach thêm `api-calls.txt` vào Playwright report.
+     - **Sau mỗi action gọi API**: `assertNoDuplicateApiCall(apiLog)` — phát hiện double-submit.
+     - **Bắt response main API**: dùng `Promise.all([page.waitForResponse(...), action()])` — assert status + body → assert UI phản ánh đúng (200 → toast thành công; 400 → error message từ server body, không hardcode).
    - **Pagination** (mục 13) — **BẮT BUỘC** khi TC thuộc nhóm TC-Px:
      - Verify tổng item từ API response khớp label trên UI
      - Assert trạng thái next/prev button theo từng trang
      - Assert không có duplicate GET call khi navigate trang
-4. **Evidence** (mục 5): chụp ảnh ở các mốc quan trọng mỗi case dùng `BasePage.screenshot(tcId, tcName, step)` (3 tham số). File lưu tại `evidence/<env>/<portal>/<module>/<function>/[TC-ID][tc-name][step].png`. Bật trace cho case fail. Khi FAIL: attach `api-calls.txt` (Rule 12d).
+4. **Evidence** (mục 5): chụp ảnh ở các mốc quan trọng mỗi case dùng `BasePage.screenshot(tcId, stepLabel)` **(2 tham số)**. File lưu tại `evidence/<env>/<portal>/<module>/<function>/[TC-ID][stepLabel].png`. Bật trace cho case fail. Khi FAIL: attach `api-calls.txt` (Rule 12d).
    - **JSON evidence — BẮT BUỘC** theo `.claude/commands/rules/report_rules.md`:
-     - Dùng `BasePage.saveJson(tcId, suffix, data)` — method đã có sẵn trong `src/pages/BasePage.ts`
-     - `test.afterEach` trong describe block → tự động lưu `TC-XX_network-log.json` cho **mọi TC**
-     - TC có main API → lưu `TC-XX_api-response.json` (full response body)
-     - TC xem danh sách → lưu `TC-XX_data-mapping.json` (so sánh API ↔ UI field-by-field)
-     - TC tìm kiếm → lưu `TC-XX_search-count.json` (keyword, apiTotal, uiRowCount)
-     - TC lọc → lưu `TC-XX_filter-count.json` (filter, apiTotal, uiRowCount)
-     - Xem `report_rules.md` § 2-3 để biết cấu trúc từng file và pattern fixture
+     - `test.afterEach` → `teardownApiMonitor(apiLog, testInfo, EVIDENCE_DIR)` → tự động lưu `{tcId}_api-calls.json` cho **mọi TC**
+     - TC có main API → lưu thủ công `{tcId}_api-response.json` (full response body, có `pagination` + `items`)
+     - TC xem danh sách → lưu thủ công `{tcId}_data-mapping.json` (so sánh API ↔ UI field-by-field)
+     - TC tìm kiếm → lưu thủ công `{tcId}_search-count.json` (keyword, apiTotal, uiRowCount)
+     - TC lọc → lưu thủ công `{tcId}_filter-count.json` (filter, apiTotal, uiRowCount)
+     - **tcId trong test title phải bắt đầu bằng `TC-{FUNC}-{NN}`** để `teardownApiMonitor` extract đúng (VD: `'TC-LIST-01 Xem danh sach'`)
+     - Xem `report_rules.md` §2-3 để biết cấu trúc từng file
 5. Code: không hard-sleep (chỉ smart wait), không inline locator, import gọn, test độc lập, cleanup data đã tạo trong teardown.
 
 ### Bước 5.5 — Static Verify (BẮT BUỘC trước khi bàn giao)
@@ -297,7 +311,7 @@ Sau khi static verify sạch, cập nhật `task.md` với thông tin handoff đ
 - **File test sinh ra:**
   - `tests/TC01_login.spec.ts`
   - `tests/TC02_upload.spec.ts`
-- **File TC gốc (để ghi P/F):** `path/to/testcases.xlsx`
+- **File TC gốc (để ghi P/F):** `path/to/KBKT_UAT_*.md`
 - **TC cần file user chưa cung cấp:** TC_02 (avatar_valid.jpg) — tạm SKIP
 - **Static Verify:** ✅ Sạch
 - [ ] B6: Chạy test + Auto-heal   ← workflow /run-and-heal sẽ tick

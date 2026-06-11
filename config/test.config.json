@@ -1,0 +1,99 @@
+{
+  "_note": "Multi-env multi-portal config. Set ENV=dev|uat và PORTAL=admin|partner|customer khi chạy.",
+  "drive": {
+    "rootFolderId": "1IjokBTRNG6GYG9nyirImDRZi5aTSPZWz",
+    "rootFolderName": "TPcoms_UAT",
+    "structure": ["env", "portal", "module", "feature"],
+    "deleteLocalAfterUpload": true
+  },
+  "environments": {
+    "dev": {
+      "admin": {
+        "baseURL": "https://tpcoms-admin-dev.viettelsoftware.com",
+        "accounts": {
+          "portalAdmin": { "username": "0987654321", "password": "${PORTAL_ADMIN_PASSWORD}", "role": "PORTAL_ADMIN" }
+        }
+      },
+      "partner": {
+        "baseURL": "https://tpcoms-partner-dev.viettelsoftware.com",
+        "accounts": {
+          "partner": { "username": "partner3", "password": "${PARTNER_PASSWORD}", "role": "PORTAL_PARTNER" }
+        }
+      },
+      "customer": {
+        "baseURL": "https://tpcoms-customer-dev.viettelsoftware.com",
+        "accounts": {
+          "customerIndividual": { "username": "0987654323", "password": "${CUSTOMER_INDIVIDUAL_PASSWORD}", "role": "CUSTOMER_PORTAL" },
+          "customerCompany":    { "username": "0987654324", "password": "${CUSTOMER_COMPANY_PASSWORD}",    "role": "CUSTOMER_PORTAL" }
+        }
+      },
+      "api": { "baseURL": "https://tpcoms-api-dev.viettelsoftware.com" }
+    },
+    "uat": {
+      "admin": {
+        "baseURL": "https://admin-1sme.tpcloud.com.vn",
+        "accounts": {
+          "portalAdmin": { "username": "admin@viettel.com.vn", "password": "${UAT_ADMIN_PASSWORD}", "role": "PORTAL_ADMIN" }
+        }
+      },
+      "partner": {
+        "baseURL": "${UAT_PARTNER_BASE_URL}",
+        "accounts": {
+          "partner": { "username": "${UAT_PARTNER_USERNAME}", "password": "${UAT_PARTNER_PASSWORD}", "role": "PORTAL_PARTNER" }
+        }
+      },
+      "customer": {
+        "baseURL": "${UAT_CUSTOMER_BASE_URL}",
+        "accounts": {
+          "customerIndividual": { "username": "${UAT_CUSTOMER_INDIVIDUAL_USERNAME}", "password": "${UAT_CUSTOMER_INDIVIDUAL_PASSWORD}", "role": "CUSTOMER_PORTAL" },
+          "customerCompany":    { "username": "${UAT_CUSTOMER_COMPANY_USERNAME}",    "password": "${UAT_CUSTOMER_COMPANY_PASSWORD}",    "role": "CUSTOMER_PORTAL" }
+        }
+      },
+      "api": {
+        "baseURL": "https://admin-1sme.tpcloud.com.vn",
+        "fixtures": {
+          "categoryId":    "fb0b5c1d-a0af-44d3-9842-08810de0e8a7",
+          "thumbnailUrl":  "https://minio-api.tpcloud.com.vn/tpcoms/articles/images/LOGIN_FAIL_1780979231367.png",
+          "thumbnailPath": "articles/images/LOGIN_FAIL_1780979231367.png",
+          "thumbnailMeta": {
+            "filePath": "articles/images/LOGIN_FAIL_1780979231367.png",
+            "fileName": "LOGIN_FAIL.png",
+            "fileSize": 844789,
+            "fileType": "png"
+          }
+        }
+      }
+    }
+  },
+  "activeEnv": "uat",
+  "timeouts": { "slowEnv": false },
+
+  "api": {
+    "note": "Shared API metadata — baseURL nằm trong environments.<env>.api.baseURL",
+    "portalCode": "PORTAL_ADMIN",
+    "auth": {
+      "loginEndpoint": "/api/v1/iam/auth/login",
+      "loginContentType": "application/x-www-form-urlencoded",
+      "loginBody": "identifier=%2B84{phone}&password={password}",
+      "note": "identifier = phone với +84 prefix URL-encoded (%2B84...)"
+    },
+    "endpoints": {
+      "articles": {
+        "create":  "/api/v1/cms/articles/posts/create-article-post",
+        "list":    "/api/v1/cms/articles/posts",
+        "approve": "/api/v1/cms/articles/posts/{id}/approve",
+        "reject":  "/api/v1/cms/articles/posts/{id}/reject"
+      }
+    },
+    "fixtures": {
+      "categoryId":    "94bed53b-d900-4fc0-8279-d1e1b3cd3825",
+      "thumbnailUrl":  "https://stg-minio.viettelsoftware.com/tpcoms/articles/images/Screenshot_2026-05-28_at_11.38.23_1780041745194.png",
+      "thumbnailPath": "articles/images/Screenshot_2026-05-28_at_11.38.23_1780041745194.png",
+      "thumbnailMeta": {
+        "fileName": "auto_test_thumb.png",
+        "fileSize": 24310,
+        "fileType": "png"
+      }
+    }
+  }
+}

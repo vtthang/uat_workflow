@@ -201,16 +201,20 @@ await page.screenshot({ path: `evidence/${tcId}/03_error_shown.png`, fullPage: t
 ```
 
 - Chụp screenshot ở các mốc quan trọng của mỗi case: sau khi điền form, sau khi submit/action chính, tại điểm assert kết quả. Thêm ảnh ngay khi assertion fail.
-- Quy ước lưu — dùng `BasePage.screenshot(tcId, tcName, step)` (3 tham số):
+- Quy ước lưu — dùng `BasePage.screenshot(tcId, stepLabel)` **(2 tham số)**:
   ```
-  evidence/<env>/<portal>/<module>/<function>/[TC-ID][TC-Name][step].png
-  Ví dụ: evidence/uat/admin/user-management/tao-moi/[TC-14][Tao moi tai khoan thanh cong][01_form_loaded].png
-                                                       [TC-14][Tao moi tai khoan thanh cong][02_form_filled].png
-                                                       [TC-14][Tao moi tai khoan thanh cong][03_after_submit].png
+  evidence/<evidenceFeatureDir>/[TC-ID][stepLabel].png
+  Ví dụ: [TC-LIST-01][01_list_loaded].png
+         [TC-CREATE-01][02_form_filled].png
+         [TC-CREATE-01][03_after_submit].png
   ```
-- `tcName`: tên ngắn gọn không dấu (latinh hoá), VD: `'Tao moi tai khoan thanh cong'`.
-- `step` (tuỳ chọn): `'01_form_loaded'`, `'02_form_filled'`, ...
-- Tất cả screenshot của một module/function nằm **cùng thư mục**, phân biệt nhau qua tên file.
+  - **tcId** theo format `TC-{FUNC}-{NN}` (xem `html_report_rules.md` mục 1)
+- **KHÔNG thêm timestamp**, **KHÔNG thêm suffix random** vào tên file.
+- Chạy lại test → file tự **overwrite** (cùng path = cùng file), không tạo file trùng.
+- `stepLabel`: mô tả bước ngắn gọn, tiếng Anh hoặc tiếng Việt không dấu, dùng `_` thay space.
+  VD: `'01_form_loaded'`, `'02_form_filled'`, `'03_toast_success'`.
+- Tất cả screenshot của một module/function nằm **cùng thư mục** (`evidenceFeatureDir`), phân biệt nhau qua tên file.
+- **Chụp ở 100% zoom, capture đầy đủ scroll** — `BasePage.screenshot()` tự động resize viewport theo `scrollHeight` thực tế của page (kể cả inner scroll container) trước khi chụp, sau đó restore lại. Mục đích: ảnh rõ nét 100%, không cắt nội dung dưới fold (pagination, total count, footer). **KHÔNG** gọi `page.screenshot()` trực tiếp — mất resize logic. **KHÔNG** dùng `style.zoom` — làm mờ ảnh.
 - Bật trace cho case fail để debug sâu: `--trace on-first-retry` (hoặc `retain-on-failure`).
 - KHÔNG chụp tràn lan ngoài các mốc quan trọng (giữ evidence gọn, có ý nghĩa).
 
@@ -367,29 +371,21 @@ page.on('response', async res => {
 });
 ```
 
-**afterEach — lưu 2 file evidence cho mọi TC (cả PASS lẫn FAIL):**
+**afterEach — KHÔNG tự viết, dùng `teardownApiMonitor` từ `ApiMonitor.ts`:**
 ```typescript
+import { setupApiMonitor, teardownApiMonitor } from '../../src/utils/ApiMonitor';
+
 test.afterEach(async ({}, testInfo) => {
-  if (apiLog.length > 0) {
-    const dir = `evidence/uat/admin/<module>/<function>`;
-    fs.mkdirSync(dir, { recursive: true });
-    const slug = testInfo.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
-    // 1. Toàn bộ calls — dùng để trace, detect duplicate
-    fs.writeFileSync(`${dir}/${slug}_api-calls.json`, JSON.stringify(apiLog, null, 2));
-    // 2. Chỉ main API calls kèm full response body
-    const mainLogs = apiLog.filter(e => e.responseBody != null);
-    if (mainLogs.length > 0) {
-      fs.writeFileSync(`${dir}/${slug}_main-api-response.json`, JSON.stringify(mainLogs, null, 2));
-    }
-  }
-  if (testInfo.status === 'failed') {
-    const logContent = apiLog
-      .map(e => `[${e.method}] ${e.url} → ${e.status}${e.responseBody ? '\n  body: ' + JSON.stringify(e.responseBody).slice(0, 200) : ''}`)
-      .join('\n');
-    await testInfo.attach('api-calls.txt', { body: Buffer.from(logContent), contentType: 'text/plain' });
-  }
-  apiLog.length = 0;
+  await teardownApiMonitor(apiLog, testInfo, EVIDENCE_DIR);
 });
+```
+
+`teardownApiMonitor` tự động:
+- Extract TC ID bằng regex `/TC-[A-Z]+-\d+/i` từ `testInfo.title` (format `TC-LIST-01`)
+- Ghi **1 file duy nhất**: `<EVIDENCE_DIR>/<TC_ID>_api-calls.json` (ví dụ `TC_UU_001_api-calls.json`)
+- KHÔNG dùng slug từ tên test — chỉ dùng ID
+- KHÔNG tạo file `_main-api-response.json` riêng — main API entry đã có `responseBody` trong file chung
+- Nếu FAIL: attach `api-calls.txt` vào Playwright report
 ```
 
 ### 12b. Kiểm tra Duplicate API Call (assert sau mỗi action chính)
@@ -458,119 +454,75 @@ await page.screenshot({ path: `evidence/${tcId}/api_response_${status}.png` });
 
 Xem mẫu ở **12a** (afterEach). Bắt buộc attach `api-calls.txt` khi `testInfo.status === 'failed'`.
 
-### 12e. GET List API — Verify data mapping từ API sang UI
+### 12e. List / Detail — Lưu data-mapping evidence (Pattern A)
 
-**Yêu cầu:** Với màn hình danh sách, phải intercept GET response và so sánh data hiển thị trên UI với data từ API.
+Với TC danh sách (LIST) và chi tiết (DETAIL), sau khi load xong, so sánh API response với UI và lưu `data-mapping.json`.
 
-**Hai pattern riêng biệt — dùng đúng pattern cho đúng tình huống:**
-
----
-
-**Pattern A — Initial page load (TC xem danh sách cơ bản)**
-
-Capture ở **fixture**, không dùng `page.reload()` trong test. `page.waitForResponse()` không reliable khi dùng với reload (page navigation cắt listener).
-
+**Pattern A — Initial load:**
 ```typescript
-// TRONG FIXTURE — capture ngay khi goto()
-loggedInMyList: async ({ page }, use) => {
-  // ... login ...
-  const listPage = new MyListPage(page, 'module/function');
+// Bắt API response khi navigate vào màn
+const [resp] = await Promise.all([
+  page.waitForResponse(r => /\/admin-members/.test(r.url()) && r.request().method() === 'GET'),
+  listPage.goto(),
+]);
+const body = await resp.json().catch(() => null);
+const firstItem = body?.items?.[0] ?? body?.data?.[0];
 
-  // Set up waitForResponse TRƯỚC khi goto() — dùng Promise.all để tránh race condition
-  const responsePromise = page.waitForResponse(
-    r => /my-api-endpoint/i.test(r.url()) && r.request().method() === 'GET',
-    { timeout: 20_000 },
-  ).catch(() => null);
-  await listPage.goto();
-  const apiRes = await responsePromise;
-  (listPage as any).initialApiBody = apiRes ? await apiRes.json().catch(() => null) : null;
+if (firstItem) {
+  // Đọc UI values từ row đầu tiên
+  const uiName  = (await listPage.tableRows.first().locator('td').nth(0).textContent())?.trim() ?? '';
+  const uiEmail = (await listPage.tableRows.first().locator('td').nth(1).textContent())?.trim() ?? '';
 
-  await use(listPage);
-},
+  const mappingFields = [
+    { field: 'Họ tên',    apiValue: firstItem.fullName ?? firstItem.name ?? '', uiDisplay: uiName,  match: uiName  === (firstItem.fullName ?? firstItem.name ?? '') },
+    { field: 'Email',     apiValue: firstItem.email ?? '',                      uiDisplay: uiEmail, match: uiEmail === (firstItem.email ?? '') },
+  ];
 
-// TRONG TEST — dùng trực tiếp, không reload
-test('TC-01 — Xem danh sách', async ({ loggedInMyList }) => {
-  const apiBody = (loggedInMyList as any).initialApiBody ?? null;
-  if (apiBody) {
-    const items: any[] = apiBody?.data?.items ?? apiBody?.data ?? [];
-    // ... so sánh với UI ...
-  }
-});
+  const fs = await import('fs');
+  fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
+  fs.writeFileSync(`${EVIDENCE_DIR}/${tcId}_data-mapping.json`, JSON.stringify({ tcId, fields: mappingFields }, null, 2));
+}
 ```
 
----
+**Lưu ý:**
+- `apiValue` = giá trị thô từ API JSON; `uiDisplay` = text hiển thị trên table cell.
+- `match = true` nếu sau khi normalize (trim, lowercase nếu cần) hai giá trị bằng nhau.
+- Với TC DETAIL: capture tất cả fields của form/card, không chỉ row đầu.
+- Lưu vào cùng `EVIDENCE_DIR` với các file evidence khác.
 
-**Pattern B — Search / Filter action (TC tìm kiếm, lọc)**
+### 12f. Search / Filter — Lưu count evidence
 
-Dùng `captureNextApiResponse` helper — `Promise.all([waitForResponse, action()])` đảm bảo listener được register TRƯỚC khi action chạy. Pattern này chỉ hoạt động khi action là AJAX call (không gây navigation).
+Với TC tìm kiếm và lọc, capture API response để lưu `search-count.json` / `filter-count.json`.
+
+Dùng `Promise.all([waitForResponse, action()])` để tránh race condition:
 
 ```typescript
-// Helper dùng chung trong spec file
 async function captureNextApiResponse(
-  page: Page,
-  urlPattern: RegExp,
-  action: () => Promise<void>,
-  timeout = 15_000,
+  page: Page, urlPattern: RegExp, action: () => Promise<void>, timeout = 15_000,
 ): Promise<any> {
   try {
     const [res] = await Promise.all([
-      page.waitForResponse(
-        r => urlPattern.test(r.url()) && r.request().method() === 'GET',
-        { timeout },
-      ),
+      page.waitForResponse(r => urlPattern.test(r.url()) && r.request().method() === 'GET', { timeout }),
       action(),
     ]);
     return await res.json().catch(() => null);
-  } catch {
-    return null;
-  }
+  } catch { return null; }
 }
 
 // Trong test search:
-const apiBody = await captureNextApiResponse(page, /my-api-endpoint/i, async () => {
-  await listPage.search(keyword);   // AJAX call, không navigate
-});
+const apiBody = await captureNextApiResponse(page, /my-api-endpoint/i, () => listPage.search(keyword));
+if (apiBody) {
+  const totalItems = apiBody?.data?.totalItems;
+  const uiRows = await page.locator('tbody tr').count();
+  saveJson(`${TC_ID}_search-count.json`, { tcId, keyword, apiTotal: totalItems, uiRowCount: uiRows, note: '...' });
+}
 
 // Trong test filter:
-const apiBody = await captureNextApiResponse(page, /my-api-endpoint/i, async () => {
-  await listPage.filterByStatus('ACTIVE');  // AJAX call, không navigate
-});
-
+const apiBody = await captureNextApiResponse(page, /my-api-endpoint/i, () => listPage.filterByStatus('ACTIVE'));
 if (apiBody) {
-  const totalItems: number = apiBody?.data?.totalItems;
-  const uiRows = await page.locator('tbody tr').count();
-  expect(uiRows).toBeLessThanOrEqual(totalItems);
-  // Lưu JSON evidence
-  saveJson(`${TC_ID}_search-count.json`, { keyword, apiTotal: totalItems, uiRowCount: uiRows });
+  saveJson(`${TC_ID}_filter-count.json`, { tcId, filter: 'Trạng thái: Kích hoạt', apiTotal, uiRowCount, note: '...' });
 }
 ```
-
----
-
-**Lưu JSON evidence để trace sau:**
-
-```typescript
-// Cấu trúc chuẩn cho từng loại TC:
-// TC xem danh sách (mapping):
-saveJson('TC-XX_data-mapping.json', {
-  tcId, apiTotal, uiRowCount,
-  apiFirstItem: { field1, field2, ... },
-  uiFirstRow:   { field1, field2, ... },
-  mappingResult: [{ field, api, ui, match }],  // ← dùng trong report
-});
-
-// TC tìm kiếm:
-saveJson('TC-XX_search-count.json', {
-  tcId, keyword, apiTotal, uiRowCount, note,  // ← dùng trong report
-});
-
-// TC lọc:
-saveJson('TC-XX_filter-count.json', {
-  tcId, filter, apiTotal, uiRowCount, note,   // ← dùng trong report
-});
-```
-
-**Lưu ý:** `page.on('response', ...)` + `page.reload()` KHÔNG dùng — race condition async body parsing không đảm bảo hoàn thành trước khi page navigation xong. Dùng Pattern A hoặc B tuỳ tình huống.
 
 ---
 
@@ -841,8 +793,8 @@ node ./node_modules/.bin/playwright test tests/ --headed
 
 ```bash
 # Evidence nằm tại: evidence/<env>/<portal>/<module>/<function>/
-# Xóa đúng các file của TC đang re-run (theo pattern [TC-14]*)
-find evidence/uat/admin/user-management/tao-moi -name "[TC-14]*" -delete
+# Xóa đúng các file của TC đang re-run (theo pattern [TC-CREATE-01]* và TC-CREATE-01_*)
+find evidence/uat/admin/user-management/tao-moi -name "[TC-CREATE-01]*" -o -name "TC-CREATE-01_*" | xargs rm -f
 
 # KHÔNG xóa toàn bộ thư mục — sẽ mất evidence của TC khác
 ```
@@ -851,21 +803,21 @@ find evidence/uat/admin/user-management/tao-moi -name "[TC-14]*" -delete
 
 ## 17. API Response — Lưu ra file JSON per TC (cả PASS lẫn FAIL)
 
-**Rule:** `afterEach` luôn lưu 2 file JSON cho mọi TC có action gọi API:
-- `<slug>_api-calls.json` — toàn bộ API calls (method, url, status, time)
-- `<slug>_main-api-response.json` — main API calls kèm `responseBody`
+**Rule:** `afterEach` luôn lưu 1 file JSON cho mọi TC có action gọi API:
+- `<TC_ID>_api-calls.json` — toàn bộ API calls; main API entry có thêm `responseBody`
+- Tên file chỉ dùng TC ID, **KHÔNG dùng slug từ tên test case**
 
 Xem mẫu đầy đủ tại **Rule 12a** (afterEach pattern).
 
 **Cấu trúc evidence folder (tất cả TC cùng module/function trong 1 thư mục):**
 ```
 evidence/uat/admin/user-management/tao-moi/
-  [TC-14][Tao moi tai khoan thanh cong][01_form_loaded].png
-  [TC-14][Tao moi tai khoan thanh cong][02_form_filled].png
-  [TC-14][Tao moi tai khoan thanh cong][03_after_submit].png
-  TC_14__T_o_m_i_t_i_kho_n_th_nh_c_ng_api-calls.json
-  TC_14__T_o_m_i_t_i_kho_n_th_nh_c_ng_main-api-response.json
-  [TC-15][Tao moi voi email][01_form_filled_email_only].png
+  [TC-CREATE-01][01_form_loaded].png
+  [TC-CREATE-01][02_form_filled].png
+  [TC-CREATE-01][03_after_submit].png
+  TC-CREATE-01_api-calls.json
+  [TC-CREATE-02][01_form_filled].png
+  TC-CREATE-02_api-calls.json
   ...
 ```
 

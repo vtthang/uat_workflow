@@ -1,0 +1,79 @@
+{
+  "_note": "Copy thành test.config.json và điền giá trị thật. Dùng biến môi trường cho password.",
+  "environments": {
+    "dev": {
+      "admin": {
+        "baseURL": "https://tpcoms-admin-dev.viettelsoftware.com",
+        "accounts": {
+          "portalAdmin": { "username": "0987654321", "password": "${PORTAL_ADMIN_PASSWORD}", "role": "PORTAL_ADMIN" }
+        }
+      },
+      "partner": {
+        "baseURL": "https://tpcoms-partner-dev.viettelsoftware.com",
+        "accounts": {
+          "partner": { "username": "partner3", "password": "${PARTNER_PASSWORD}", "role": "PORTAL_PARTNER" }
+        }
+      },
+      "customer": {
+        "baseURL": "https://tpcoms-customer-dev.viettelsoftware.com",
+        "accounts": {
+          "customerIndividual": { "username": "0987654323", "password": "${CUSTOMER_INDIVIDUAL_PASSWORD}", "role": "CUSTOMER_PORTAL" },
+          "customerCompany":    { "username": "0987654324", "password": "${CUSTOMER_COMPANY_PASSWORD}",    "role": "CUSTOMER_PORTAL" }
+        }
+      },
+      "api": { "baseURL": "https://tpcoms-api-dev.viettelsoftware.com" }
+    },
+    "uat": {
+      "admin": {
+        "baseURL": "${UAT_ADMIN_BASE_URL}",
+        "accounts": {
+          "portalAdmin": { "username": "${UAT_ADMIN_USERNAME}", "password": "${UAT_ADMIN_PASSWORD}", "role": "PORTAL_ADMIN" }
+        }
+      },
+      "partner": {
+        "baseURL": "${UAT_PARTNER_BASE_URL}",
+        "accounts": {
+          "partner": { "username": "${UAT_PARTNER_USERNAME}", "password": "${UAT_PARTNER_PASSWORD}", "role": "PORTAL_PARTNER" }
+        }
+      },
+      "customer": {
+        "baseURL": "${UAT_CUSTOMER_BASE_URL}",
+        "accounts": {
+          "customerIndividual": { "username": "${UAT_CUSTOMER_INDIVIDUAL_USERNAME}", "password": "${UAT_CUSTOMER_INDIVIDUAL_PASSWORD}", "role": "CUSTOMER_PORTAL" },
+          "customerCompany":    { "username": "${UAT_CUSTOMER_COMPANY_USERNAME}",    "password": "${UAT_CUSTOMER_COMPANY_PASSWORD}",    "role": "CUSTOMER_PORTAL" }
+        }
+      },
+      "api": { "baseURL": "${UAT_API_BASE_URL}" }
+    }
+  },
+  "activeEnv": "dev",
+  "timeouts": { "slowEnv": false },
+
+  "api": {
+    "note": "Shared API metadata — baseURL nằm trong environments.<env>.api.baseURL",
+    "portalCode": "PORTAL_ADMIN",
+    "auth": {
+      "loginEndpoint": "/api/v1/iam/auth/login",
+      "loginContentType": "application/x-www-form-urlencoded",
+      "note": "identifier = phone với +84 prefix URL-encoded (%2B84...)"
+    },
+    "endpoints": {
+      "articles": {
+        "create":  "/api/v1/cms/articles/posts/create-article-post",
+        "list":    "/api/v1/cms/articles/posts",
+        "approve": "/api/v1/cms/articles/posts/{id}/approve",
+        "reject":  "/api/v1/cms/articles/posts/{id}/reject"
+      }
+    },
+    "fixtures": {
+      "categoryId":    "<uuid của danh mục test>",
+      "thumbnailUrl":  "<URL ảnh mẫu trên MinIO>",
+      "thumbnailPath": "<path ảnh mẫu trên MinIO>",
+      "thumbnailMeta": {
+        "fileName": "auto_test_thumb.png",
+        "fileSize": 0,
+        "fileType": "png"
+      }
+    }
+  }
+}

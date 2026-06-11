@@ -89,19 +89,19 @@ Xem checklist đầy đủ trong `generate-automation-from-testcases.md` Bước
 
 **Screenshot timing:** Luôn đợi `networkidle` + skeleton biến mất trước khi chụp. `BasePage.screenshot()` đã tích hợp sẵn — không gọi `page.screenshot()` trực tiếp trong test. Xem `test_execution_rules.md` Rule 5.
 
-**Screenshot signature (3 params):**
+**Screenshot signature (2 params):**
 ```typescript
-// BasePage.screenshot(tcId, tcName, step?)
-await basePage.screenshot('TC-01', 'Xem danh sach tai khoan', '01_list_loaded');
-// → evidence/uat/admin/<module>/<function>/[TC-01][Xem danh sach tai khoan][01_list_loaded].png
+// BasePage.screenshot(tcId, stepLabel)
+// tcId theo format TC-{FUNC}-{NN} (xem html_report_rules.md mục 1)
+await basePage.screenshot('TC-LIST-01', '01_list_loaded');
+// → evidence/uat/admin/<module>/<function>/[TC-LIST-01][01_list_loaded].png
 
-// step là tuỳ chọn — khi không có step:
-await basePage.screenshot('TC-01', 'Xem danh sach tai khoan');
-// → [TC-01][Xem danh sach tai khoan].png
+await basePage.screenshot('TC-CREATE-01', '03_after_submit');
+// → [TC-CREATE-01][03_after_submit].png
 ```
 
-**tcName:** tên ngắn gọn không dấu (latinh hoá), VD: `'Loc trang thai Kich hoat'`, `'Tao moi tai khoan thanh cong'`.  
-**step:** số thứ tự + mô tả bước, VD: `'01_list_loaded'`, `'02_form_filled'`, `'03_after_submit'`.
+**tcId:** format `TC-{FUNC}-{NN}` — FUNC xác định theo chức năng (LIST, CREATE, DETAIL, TOGGLE, UPDATE, HISTORY, RESET...), NN bắt đầu từ 01.  
+**stepLabel:** mô tả bước ngắn gọn, VD: `'01_list_loaded'`, `'02_form_filled'`, `'03_after_submit'`. Tham số thứ 3 tùy chọn là `focusLocator` (scroll element vào view trước khi chụp).
 
 ## 9. Chia sẻ state giữa các test run bằng fixture file
 
@@ -201,31 +201,21 @@ page.on('response', async res => {
 });
 ```
 
-### afterEach — lưu 2 file evidence (cả PASS lẫn FAIL)
+### afterEach — dùng `teardownApiMonitor` (KHÔNG tự viết inline)
 
 ```typescript
+import { setupApiMonitor, teardownApiMonitor } from '../../src/utils/ApiMonitor';
+
 test.afterEach(async ({}, testInfo) => {
-  if (apiLog.length > 0) {
-    const dir = `evidence/uat/admin/<module>/<function>`;
-    fs.mkdirSync(dir, { recursive: true });
-    const slug = testInfo.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40);
-    // 1. Toàn bộ calls — dùng để trace và detect duplicate
-    fs.writeFileSync(`${dir}/${slug}_api-calls.json`, JSON.stringify(apiLog, null, 2));
-    // 2. Chỉ main API calls kèm full response body (entries có responseBody)
-    const mainApiLogs = apiLog.filter(e => e.responseBody != null);
-    if (mainApiLogs.length > 0) {
-      fs.writeFileSync(`${dir}/${slug}_main-api-response.json`, JSON.stringify(mainApiLogs, null, 2));
-    }
-  }
-  if (testInfo.status === 'failed') {
-    const logContent = apiLog
-      .map(e => `[${e.method}] ${e.url} → ${e.status}${e.responseBody ? '\n  body: ' + JSON.stringify(e.responseBody).slice(0, 200) : ''}`)
-      .join('\n');
-    await testInfo.attach('api-calls.txt', { body: Buffer.from(logContent), contentType: 'text/plain' });
-  }
-  apiLog.length = 0;
+  await teardownApiMonitor(apiLog, testInfo, EVIDENCE_DIR);
+  // Tự động:
+  //   - Ghi 1 file: <EVIDENCE_DIR>/TC-LIST-01_api-calls.json (mọi calls; main API entry có responseBody)
+  //   - Nếu FAIL: attach api-calls.txt vào Playwright report
+  //   - Reset apiLog.length = 0
 });
 ```
+
+`teardownApiMonitor` extract TC ID bằng regex `/TC-[A-Z]+-\d+/i` từ `testInfo.title` → dùng làm prefix tên file. TC ID phải nằm ở đầu test title (VD: `'TC-LIST-01 Xem danh sach'`).
 
 ### Reset apiLog trước action chính
 

@@ -1,0 +1,101 @@
+{
+  "screen": "user-management-list",
+  "url": "/users",
+  "framework": "playwright",
+  "lastVerified": "2026-06-10",
+  "elements": {
+    "pagination": {
+      "nextBtn": {
+        "primary": "button[aria-label='Next page']",
+        "fallback": "button[aria-label*='Next' i]",
+        "action": "click",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1-enabled", "loaded-page2-enabled"],
+        "note": "Enabled when total pages > current page. Unique match: 1. Clicking updates URL to ?page=N."
+      },
+      "prevBtn": {
+        "primary": "button[aria-label='Previous page']",
+        "fallback": "button[aria-label*='Prev' i]",
+        "action": "click",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1-disabled", "loaded-page2-enabled"],
+        "note": "Disabled on page 1 via HTML 'disabled' boolean attribute (disabled=''). Enabled from page 2 onward. Unique match: 1."
+      },
+      "firstBtn": {
+        "primary": "button[aria-label='First page']",
+        "fallback": "button[aria-label*='First' i]",
+        "action": "click",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1-disabled", "loaded-page2-enabled"],
+        "note": "Disabled on page 1 via HTML 'disabled' boolean attribute. Enabled from page 2 onward. Unique match: 1."
+      },
+      "lastBtn": {
+        "primary": "button[aria-label='Last page']",
+        "fallback": "button[aria-label*='Last' i]",
+        "action": "click",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1-enabled"],
+        "note": "Enabled when not already on last page. Unique match: 1."
+      },
+      "pageInput": {
+        "primary": null,
+        "fallback": null,
+        "action": null,
+        "stability": null,
+        "verifiedStates": [],
+        "note": "No page number input field found. Navigation is done via numbered page buttons or Next/Prev/First/Last buttons only."
+      },
+      "pageIndicator": {
+        "primary": "button[aria-current='page']",
+        "fallback": "button.disabled:pointer-events-none[aria-current='page']",
+        "action": "assert",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1", "loaded-page2"],
+        "note": "Active/current page button has aria-current='page' attribute. Also has disabled='' (pointer-events-none). On page 1: text='1', aria-current='page'. On page 2: text='2', aria-current='page'. Use .textContent() to get current page number."
+      },
+      "totalCount": {
+        "primary": "div.text-main:has(span) >> span",
+        "fallback": "div:has-text('Tất cả danh sách') span",
+        "action": "assert",
+        "stability": "medium",
+        "verifiedStates": ["loaded"],
+        "note": "Displayed as: 'Tất cả danh sách : <span>589</span>'. The <span> inside the div contains the numeric total. Full parent locator: div.flex-1.text-sm.text-main. Stability=medium due to reliance on Vietnamese UI text 'Tất cả danh sách'."
+      },
+      "disabledAttr": {
+        "primary": "button[aria-label='Previous page'][disabled]",
+        "fallback": null,
+        "action": "assert",
+        "stability": "high",
+        "verifiedStates": ["loaded-page1"],
+        "note": "Disabled state uses HTML boolean attribute: disabled=''. NOT aria-disabled. Check via: getAttribute('disabled') !== null, OR Playwright isDisabled(). CSS visual cues: class includes 'disabled:text-gray-200' and 'disabled:border-[#9DA4AE]'. Same pattern applies to firstBtn when on page 1."
+      },
+      "pageSizeSelect": {
+        "primary": "select.h-8.min-w-\\[124px\\]",
+        "fallback": "select:has(option[value='10'])",
+        "action": "select",
+        "stability": "medium",
+        "verifiedStates": ["loaded"],
+        "note": "Native <select> element with options: 10/trang, 20/trang, 50/trang, 100/trang. No data-testid or name attribute. Stability=medium due to CSS class dependency. The selected value controls items per page."
+      },
+      "lastPageNumber": {
+        "primary": "button[aria-label='Last page']",
+        "fallback": null,
+        "action": "assert",
+        "stability": "high",
+        "verifiedStates": ["loaded"],
+        "note": "Last visible page number button (e.g. '59') is also present in DOM but is not labelled 'last page button' — use button[aria-label='Last page'] to navigate to last page. As of 2026-06-10: total 589 records, 59 pages (with 10/page default)."
+      }
+    }
+  },
+  "dataObservations": {
+    "totalRecords": 589,
+    "totalPages": 59,
+    "defaultPageSize": 10,
+    "pageSizeOptions": [10, 20, 50, 100],
+    "hasMultiplePages": true,
+    "nextBtnEnabledOnPage1": true,
+    "prevBtnDisabledOnPage1": true,
+    "urlPatternOnPageChange": "/users?page={N}"
+  },
+  "notes": "Custom pagination component (not Ant Design / Material). All nav buttons use aria-label for semantic identification — high stability. Disabled state = HTML boolean 'disabled' attribute (NOT aria-disabled). Current page = aria-current='page' on the page number button. Total count displayed in Vietnamese: 'Tất cả danh sách : {N}'. Page size is a native <select> with no name/id attributes. No page number input exists."
+}

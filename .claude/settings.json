@@ -14,7 +14,9 @@
     "additionalDirectories": [
       "/Users/hangvu/Desktop/VTIT/claude_tpcoms",
       "/tmp",
-      "/private/tmp"
+      "/private/tmp",
+      "/Users/hangvu/Desktop/VTIT/tpcom-uat/testcase",
+      "/Users/hangvu/Desktop/VTIT/tpcom-uat"
     ]
   }
 }

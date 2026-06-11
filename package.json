@@ -1,0 +1,19 @@
+{
+  "name": "uat-workflow",
+  "version": "1.0.0",
+  "description": "UAT Automation Workflow",
+  "scripts": {
+    "install:browsers": "playwright install chromium",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:grep": "playwright test --headed --grep",
+    "report": "playwright show-report playwright-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0"
+  }
+}

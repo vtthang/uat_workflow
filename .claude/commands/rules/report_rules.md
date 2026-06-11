@@ -8,61 +8,50 @@
 
 Mỗi TC phải lưu đủ các file JSON vào `evidence/<env>/<portal>/<module>/<function>/`:
 
-| File | TC type | Nội dung |
-|---|---|---|
-| `TC-XX_network-log.json` | **Mọi TC** | Tất cả API calls trong test (method, url, status, isMain) |
-| `TC-XX_api-response.json` | Mọi TC có main API | Full response body (pagination + items) |
-| `TC-XX_data-mapping.json` | TC xem danh sách (TC-01 type) | So sánh field-by-field API ↔ UI |
-| `TC-XX_search-count.json` | TC tìm kiếm (kể cả không có kết quả) | keyword, apiTotal, uiRowCount, note |
-| `TC-XX_filter-count.json` | TC lọc | filter, apiTotal, uiRowCount, note |
+| File | TC type | Sinh bởi | Nội dung |
+|---|---|---|---|
+| `TC-LIST-01_api-calls.json` | **Mọi TC** | `teardownApiMonitor` (auto) | Tất cả API calls; main API entry có thêm `responseBody` |
+| `TC-LIST-01_data-mapping.json` | TC danh sách / chi tiết | Test code (manual) | fields[], mỗi field: field, apiValue, uiDisplay, match |
+| `TC-LIST-02_search-count.json` | TC tìm kiếm (kể cả không có kết quả) | Test code (manual) | keyword, apiTotal, uiRowCount, note |
+| `TC-LIST-06_filter-count.json` | TC lọc | Test code (manual) | filter, apiTotal, uiRowCount, note |
 
-**Quan trọng:** `TC-XX_search-count.json` và `TC-XX_filter-count.json` bắt buộc có kể cả khi `apiTotal = 0`.
+**Quan trọng:** `_search-count.json` và `_filter-count.json` bắt buộc có kể cả khi `apiTotal = 0`.
 
 ---
 
 ## 2. Cấu trúc từng file
 
-### `network-log.json`
+### `api-calls.json` (auto — `teardownApiMonitor`)
+```json
+[
+  { "method": "GET", "url": "https://.../me/userinfo", "status": 200, "time": 1749470894948 },
+  { "method": "GET", "url": "https://.../admin-members?page=0&size=10", "status": 200, "time": 1749470895001,
+    "responseBody": { "page": 0, "size": 10, "totalItems": 100, "items": [...] }
+  }
+]
+```
+- Sinh tự động bởi `teardownApiMonitor` — tên file: `{tcId}_api-calls.json`
+- Main API entry có thêm `responseBody` (phân biệt qua `entry.responseBody != null`)
+- TC ID theo format `TC-{FUNC}-{NN}` (xem `html_report_rules.md` mục 1)
+
+### `data-mapping.json`
 ```json
 {
-  "tcId": "TC-LIST-XX",
-  "calls": [
-    { "method": "GET", "url": "https://...", "status": 200, "isMain": false },
-    { "method": "GET", "url": "https://.../admin-members?page=0&size=10", "status": 200, "isMain": true }
+  "tcId": "TC-LIST-01",
+  "fields": [
+    { "field": "Họ tên",    "apiValue": "Nguyễn Văn A",  "uiDisplay": "Nguyễn Văn A",  "match": true },
+    { "field": "Email",     "apiValue": "a@example.com", "uiDisplay": "a@example.com", "match": true },
+    { "field": "Trạng thái","apiValue": "ACTIVE",        "uiDisplay": "Kích hoạt",     "match": true }
   ]
 }
 ```
-- `isMain: true` — API chính của màn hình (list endpoint, search endpoint...)
-- Sinh tự động qua `test.afterEach` — không cần gọi thủ công trong từng test
-
-### `api-response.json`
-```json
-{
-  "tcId": "TC-LIST-XX",
-  "description": "Raw API response — <mô tả ngắn>",
-  "capturedAt": "<ISO timestamp>",
-  "pagination": { "totalItems": N, "totalPages": N, "page": 0, "size": 10 },
-  "items": [ ... ]
-}
-```
-
-### `data-mapping.json` (TC xem danh sách)
-```json
-{
-  "tcId": "TC-LIST-XX",
-  "apiTotal": 100, "uiRowCount": 10,
-  "apiFirstItem": { "field1": "value", ... },
-  "uiFirstRow":   { "field1": "value", ... },
-  "mappingResult": [
-    { "field": "Họ tên", "api": "Nguyễn A", "ui": "Nguyễn A", "match": true }
-  ]
-}
-```
+> Capture từ row đầu tiên (TC danh sách) hoặc toàn bộ fields (TC chi tiết).  
+> `apiValue` = giá trị thô từ API response; `uiDisplay` = text hiển thị trên UI.
 
 ### `search-count.json`
 ```json
 {
-  "tcId": "TC-LIST-XX",
+  "tcId": "TC-LIST-02",
   "keyword": "từ khóa",
   "apiTotal": 5,
   "uiRowCount": 5,
@@ -74,7 +63,7 @@ Mỗi TC phải lưu đủ các file JSON vào `evidence/<env>/<portal>/<module>
 ### `filter-count.json`
 ```json
 {
-  "tcId": "TC-LIST-XX",
+  "tcId": "TC-LIST-06",
   "filter": "Trạng thái: Kích hoạt",
   "apiTotal": 85,
   "uiRowCount": 10,
@@ -84,83 +73,72 @@ Mỗi TC phải lưu đủ các file JSON vào `evidence/<env>/<portal>/<module>
 
 ---
 
-## 3. Network log — sinh tự động qua fixture + afterEach
+## 3. API Calls log — sinh tự động qua `setupApiMonitor` + `teardownApiMonitor`
 
-### Trong fixture (`src/fixtures/<module>.fixture.ts`)
-```typescript
-// Bắt đầu log TRƯỚC goto() để capture cả initial page load
-type ApiCall = { method: string; url: string; status: number; isMain: boolean };
-const networkLog: ApiCall[] = [];
-const networkHandler = (res: Response) => {
-  const url = res.url();
-  if (!/\/api\/|\/iam\/|\/v1\//.test(url)) return;
-  if (/\.(js|css|png|jpg|ico|woff|svg)$/i.test(url)) return;
-  networkLog.push({
-    method: res.request().method(),
-    url,
-    status: res.status(),
-    isMain: /MAIN_API_PATTERN/i.test(url) && res.request().method() === 'GET',
-  });
-};
-page.on('response', networkHandler);
-// ... goto() ...
-(listPage as any).networkLog = networkLog;
-await use(listPage);
-page.off('response', networkHandler);
-```
-> Thay `MAIN_API_PATTERN` bằng regex khớp với API list chính của màn hình.
+> Xem chi tiết pattern tại `test_execution_rules.md` §12 và `automation_rules.md` §12.
 
-### Trong test file (describe block)
+**Setup trong `beforeEach`:**
 ```typescript
-test.afterEach(async ({ loggedInXxxList }, testInfo) => {
-  const networkLog: any[] = (loggedInXxxList as any).networkLog ?? [];
-  if (networkLog.length === 0) return;
-  const match = testInfo.title.match(/^(TC-\d+)/);
-  if (!match) return;
-  const tcListId = `TC-LIST-${match[1].slice(3).padStart(2, '0')}`;
-  saveJson(`${tcListId}_network-log.json`, { tcId: tcListId, calls: networkLog });
+import { setupApiMonitor, teardownApiMonitor, ApiLogEntry } from '../../src/utils/ApiMonitor';
+
+const EVIDENCE_DIR = 'evidence/uat/admin/<module>/<function>';
+const apiLog: ApiLogEntry[] = [];
+const isMainApi = (res: { url(): string; request(): { method(): string } }) =>
+  /\/admin-members/.test(res.url()) && res.request().method() === 'GET';
+
+test.beforeEach(async ({ page }) => {
+  apiLog.length = 0;
+  setupApiMonitor(page, apiLog, isMainApi);
 });
+```
+
+**Teardown trong `afterEach`:**
+```typescript
+test.afterEach(async ({}, testInfo) => {
+  await teardownApiMonitor(apiLog, testInfo, EVIDENCE_DIR);
+  // Ghi: <EVIDENCE_DIR>/TC-LIST-01_api-calls.json
+  // TC ID extract bằng regex /TC-[A-Z]+-\d+/i từ testInfo.title
+});
+```
+
+**Test title PHẢI bắt đầu bằng TC ID** để teardownApiMonitor extract đúng:
+```typescript
+test('TC-LIST-01 Danh sách hiển thị đúng khi có dữ liệu', async ({}) => { ... });
+test('TC-CREATE-01 Tạo tài khoản thành công', async ({}) => { ... });
 ```
 
 ---
 
-## 4. Report generator — cách đọc và render
+## 4. Report generator — xem `html_report_rules.md`
 
-### `loadJsonEvidence()` — phân loại theo suffix
-```javascript
-if (file.includes('network-log'))    map[tcId].networkLog   = data;
-else if (file.includes('api-response'))  map[tcId].apiResponse = data;
-else if (file.includes('data-mapping'))  map[tcId].mapping     = data;
-else if (file.includes('search-count'))  map[tcId].searchCount = data;
-else if (file.includes('filter-count'))  map[tcId].filterCount = data;
-```
+> Toàn bộ spec sinh HTML report (cấu trúc, TC card, API Calls table, count-box, Response body, embedding ảnh base64) được mô tả trong `html_report_rules.md`.
 
-### `networkPanel(ev)` — render trong TC card
-Hiển thị:
-1. **Bảng API Calls** — method, endpoint (rút gọn), status. Row `isMain` highlight tím.
-2. **Main API detail** — lấy call `isMain` CUỐI CÙNG (test action, không phải fixture load):
-   ```javascript
-   const mainCall = [...calls].reverse().find(c => c.isMain);
-   ```
-3. **Detail panel** (bên dưới bảng):
-   - `mapping` → bảng so sánh field-by-field API ↔ UI
-   - `searchCount` → keyword + API total + UI rows + note
-   - `filterCount` → filter + API total + UI rows + note
-   - `apiResponse` → collapsible `<details>` với full JSON response body
+Tóm tắt mapping evidence → HTML:
 
-### Thứ tự ưu tiên hiển thị detail
+| File evidence | Render trong TC card |
+|---|---|
+| `{tcId}_api-calls.json` | API Calls table; entry có `responseBody` → isMain row highlight tím + badge MAIN + `<details>` Response body |
+| `{tcId}_data-mapping.json` | Data Mapping table: Field / Giá trị API / Hiển thị UI / Khớp (list/detail TCs) |
+| `{tcId}_search-count.json` | count-box: Keyword + API total + UI rows + note |
+| `{tcId}_filter-count.json` | count-box: Filter + API total + UI rows + note |
+| `[{tcId}][{stepLabel}].png` | Screenshots carousel (embed base64) — zoom 75% trước khi chụp |
+
+**Thứ tự render trong TC body:**
 ```
-mapping > searchCount > filterCount
+1. Screenshots carousel
+2. API Calls table
+3. count-box (search/filter TCs)
+4. Data Mapping table (list/detail TCs)
+5. Response body collapsible
 ```
-Cùng với `apiResponse` luôn hiển thị (collapsible) nếu có.
 
 ---
 
 ## 5. Checklist trước khi gen report
 
-- [ ] Mỗi TC có `network-log.json` (sinh tự động qua `afterEach`)
-- [ ] TC xem danh sách: có `data-mapping.json` + `api-response.json`
-- [ ] TC tìm kiếm (kể cả không có kết quả): có `search-count.json` + `api-response.json`
-- [ ] TC lọc: có `filter-count.json` + `api-response.json`
-- [ ] TC không có main API (sort, clear, navigate): chỉ cần `network-log.json`
+- [ ] Mỗi TC có `{tcId}_api-calls.json` (sinh tự động qua `teardownApiMonitor`)
+- [ ] TC danh sách / chi tiết: có `{tcId}_data-mapping.json` (field / apiValue / uiDisplay / match)
+- [ ] TC tìm kiếm (kể cả không có kết quả): có `{tcId}_search-count.json`
+- [ ] TC lọc: có `{tcId}_filter-count.json`
+- [ ] Test title bắt đầu bằng TC ID đúng format `TC-{FUNC}-{NN}`
 
