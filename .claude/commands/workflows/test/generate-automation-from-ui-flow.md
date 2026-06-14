@@ -22,7 +22,7 @@ Bắt buộc **Playwright + TypeScript**.
 ## Các bước
 
 1. **Phân tích UI flow**: parse các bước user mô tả thành chuỗi action + expected. Đọc `config/test.config.json` (môi trường + account, xem `config_management.md`). Xác định page đi qua. Tạo `task.md`.
-2. **Khảo sát & thực thi UI** (delegate `ui-debug-agent` qua `Task`, cache-first): đọc `locators/<screen>.screen.json` trước; thiếu thì chạy step trên browser thu thập + ghi repository. Màn phức tạp → skill `record-with-codegen` (user tự record).
+2. **Khảo sát & thực thi UI** (delegate `ui-debug-agent` qua `Task`, cache-first): đọc `output/locators/<screen>.screen.json` trước; thiếu thì chạy step trên browser thu thập + ghi repository. Màn phức tạp → skill `record-with-codegen` (user tự record).
 3. **Thiết kế POM**: mỗi page → 1 Page class, locator từ bước 2. Locator mới → `smart-locator`.
 4. **Test data**: dùng `test-data-generator` cho field unique (traceable format).
 5. **Sinh scripts**: Arrange-Act-Assert, smart wait, test độc lập. Theo `.claude/commands/rules/test_execution_rules.md`: exact text cho message, fill hợp lệ field khác, bắt request/response cho API, bắt request cho trim, evidence theo bước.

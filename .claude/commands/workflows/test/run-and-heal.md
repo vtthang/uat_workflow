@@ -40,6 +40,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
    ```bash
    npx playwright test <file|dir> --headed --reporter=list
    ```
+   - Suite bao gồm cả `output/tests/_common/permission.spec.ts` (TC-PERM) nếu có — chạy cùng, heal như TC thường.
+   - **Round mặc định = tiếng Việt.** KHÔNG tự chạy `test:en`; chỉ chạy `LOCALE=en npx playwright test` khi user yêu cầu kiểm tra tiếng Anh.
 
 2. Đọc stdout output: dòng có `✗` chứa tên test fail → extract TC ID theo pattern `TC-[A-Z0-9-]+` → đưa vào danh sách cần heal. Dòng có `✓` → ghi ✅.
 
@@ -58,6 +60,8 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
    - **Tiếp tục TC kế tiếp ngay** — không hỏi user, không dừng, không chạy lại suite
 
 > **Hard cap:** Tổng tối đa **10 lần sửa code** trong toàn bộ workflow (đếm qua mọi TC). Vượt cap → mark toàn bộ TC còn lại là FAIL, chuyển sang Bước 4.
+
+> **Ngoại lệ RULE 15 — sửa shared-code:** nếu fix chạm **code dùng chung** (POM, util, fixture, `isMainApi`/predicate, config) → KHÔNG chỉ re-run TC fail mà **re-run mọi TC phụ thuộc code đó** (cùng spec/POM). Lý do: fix có thể làm evidence của TC đang PASS trở nên sai/thiếu mà không báo lỗi. (Đã từng: sửa predicate API nhưng TC PASS cũ giữ evidence sai.)
 
 ---
 
@@ -101,14 +105,14 @@ Báo cáo cho user:
 ## Kết quả chạy test
 | TC ID | Tên | Kết quả | Vòng heal | Evidence |
 |---|---|---|---|---|
-| TC_01 | Login thành công | ✅ PASS | 0 | evidence/TC_01/ |
-| TC_02 | Upload ảnh | ✅ PASS | 2 | evidence/TC_02/ |
+| TC_01 | Login thành công | ✅ PASS | 0 | output/evidence/TC_01/ |
+| TC_02 | Upload ảnh | ✅ PASS | 2 | output/evidence/TC_02/ |
 | TC_03 | So sánh Figma | ⏭️ SKIP | — | Visual-only |
 
 **Tổng: X PASS / Y FAIL / Z SKIP**
 
 Files đã tạo/sửa: [danh sách]
-Evidence: evidence/<TC_ID>/
+Evidence: output/evidence/<TC_ID>/
 Known issues: [nếu có]
 Cảnh báo locator low-confidence: [nếu có]
 ```
@@ -117,13 +121,20 @@ Cảnh báo locator low-confidence: [nếu có]
 - Test files đã PASS stable (≥ 2 lần)
 - `task.md` cập nhật đầy đủ
 - File testcase `.md` đã ghi P/F
-- Evidence screenshots (`evidence/<TC_ID>/`)
+- Evidence screenshots (`output/evidence/<TC_ID>/`)
 - Báo cáo PASS/FAIL/SKIP
 
 ---
 
-## Bước tiếp theo
+### Bước 5.5 — Evidence Completeness Gate (BẮT BUỘC trước report)
 
-**Khi dùng độc lập** (user gọi `/run-and-heal` trực tiếp): Hỏi user có muốn deliver lên Drive không trước khi invoke `workflows:test:deliver-to-drive`.
+Theo `report_rules.md` §5: với **mỗi TC PASS**, verify đủ evidence (`api-calls.json` + `responseBody` main API + `data-mapping`/`search-count`/`filter-count` theo loại TC). **Thiếu → re-run TC đó dù đang PASS** (ngoại lệ RULE 15). Chỉ qua Bước tiếp theo khi gate xanh.
 
-**Khi trong `/full-pipeline`**: Workflow cha (full-pipeline) sẽ gọi Phase 4 deliver. **KHÔNG tự gọi deliver-to-drive** — tránh double-delivery.
+---
+
+## Bước tiếp theo — sinh HTML report (local, KHÔNG Drive)
+
+Sau khi gate xanh, **sinh HTML report tại local** từ evidence theo `html_report_rules.md`. Report PHẢI render đủ: screenshots · count-box · **Data Mapping** · API Calls (main highlight) · **Full response body** (collapsible):
+- Output: `output/reports/{TenTinhNang}_report_{YYYY-MM-DD}.html` (tự chứa, ảnh embed base64)
+
+**KHÔNG upload Drive** (đã bỏ). Khi trong `/full-pipeline`: workflow cha gọi Phase 4 report — run-and-heal không tự sinh để tránh trùng.

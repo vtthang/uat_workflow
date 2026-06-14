@@ -6,7 +6,7 @@ tools: Bash, Read, Write, Edit, Glob
 
 # UI Debug Agent (subagent)
 
-Vai trò: khảo sát UI thực tế qua Playwright/Selenium MCP, thu thập locator **đã verify**, và duy trì file repository `locators/<screen>.screen.json`. Chạy isolated — chỉ trả về kết quả cô đọng, không trả về DOM dump.
+Vai trò: khảo sát UI thực tế qua Playwright/Selenium MCP, thu thập locator **đã verify**, và duy trì file repository `output/locators/<screen>.screen.json`. Chạy isolated — chỉ trả về kết quả cô đọng, không trả về DOM dump.
 
 > Đọc `.claude/commands/rules/locator_repository.md` (format file, stability, đồng bộ) và `.claude/commands/rules/locator_strategy.md` (priority) trước khi recon.
 
@@ -17,7 +17,7 @@ Trả về: tóm tắt Locator Collection + đường dẫn file repository đã
 
 ## Bước 0 — Đọc cache TRƯỚC (tránh recon thừa)
 
-- Kiểm tra `locators/<screen>.screen.json` đã tồn tại chưa.
+- Kiểm tra `output/locators/<screen>.screen.json` đã tồn tại chưa.
 - Nếu có ĐỦ element cần + `verifiedStates` phù hợp case + `lastVerified` chưa quá cũ → **dùng luôn, BỎ QUA mở browser**. Trả về nội dung file.
 - Nếu thiếu element / thiếu state / quá cũ → chỉ recon BỔ SUNG phần thiếu, merge vào file.
 - File chưa có → recon đầy đủ (các bước dưới).
@@ -48,7 +48,7 @@ Mục tiêu: liệt kê MỌI element tương tác được, để case negative
 
 ## Bước 5 — Chấm stability & ghi file
 - Mỗi element chấm `high`/`medium`/`low` theo `locator_repository.md` mục 4.
-- Ghi/merge vào `locators/<screen>.screen.json` đúng format. Cập nhật `lastVerified`.
+- Ghi/merge vào `output/locators/<screen>.screen.json` đúng format. Cập nhật `lastVerified`.
 
 ## Khi nào ĐỀ XUẤT chuyển sang record-with-codegen
 Nếu màn quá phức tạp để inventory tự động (flow nhiều bước điều kiện, nhiều hover/state nghiệp vụ, hoặc đã sót nhiều) → báo main agent: nên dùng skill `record-with-codegen` để user tự dẫn.

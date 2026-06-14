@@ -22,7 +22,7 @@ Main agent gọi healer khi test fail và lỗi được phân loại là locato
 3. **Tìm locator thay thế** theo priority (`.claude/commands/rules/locator_strategy.md`):
    accessibility (`aria-label`,`role`) → `data-testid` → `id` (ổn định, không auto-gen) → semantic (`getByRole`/`getByLabel`) → css (thuộc tính ổn định) → xpath (tương đối, không theo vị trí).
 4. **Verify & thay thế**: locator mới match đúng 1 element, đúng element mục tiêu (kiểm text/attribute) → `Edit` thay locator trong Page class.
-5. **Đồng bộ CẢ HAI nơi** (theo `.claude/commands/rules/locator_repository.md` mục 5): `Edit` locator mới vào Page class **và** cập nhật `locators/<screen>.screen.json` (primary/fallback mới, `lastVerified`, hạ `stability` nếu locator mới yếu hơn).
+5. **Đồng bộ CẢ HAI nơi** (theo `.claude/commands/rules/locator_repository.md` mục 5): `Edit` locator mới vào Page class **và** cập nhật `output/locators/<screen>.screen.json` (primary/fallback mới, `lastVerified`, hạ `stability` nếu locator mới yếu hơn).
 6. **Trả kết quả** cho main agent: locator cũ → mới, lý do, file/dòng đã sửa. Main agent chịu trách nhiệm chạy lại test.
 
 ## Verification (trước khi trả về)

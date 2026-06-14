@@ -10,7 +10,7 @@
 
 ## 2. Vị trí & tổ chức
 
-- **Mỗi màn hình một file**: `locators/<screen>.screen.json` (vd `locators/login.screen.json`).
+- **Mỗi màn hình một file**: `output/locators/<screen>.screen.json` (vd `output/locators/login.screen.json`).
 - Tên screen theo Page class tương ứng (LoginPage → `login.screen.json`).
 - KHÔNG gộp mọi màn vào một file (tránh xung đột parallel, diff bẩn, đọc thừa).
 

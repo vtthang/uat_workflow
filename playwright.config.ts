@@ -8,8 +8,8 @@ const cfg = loadConfig((process.env.PORTAL as 'admin' | 'partner' | 'customer') 
 const slow = !!process.env.VPN || !!process.env.SLOW_NET || cfg.timeouts.slowEnv;
 
 export default defineConfig({
-  testDir: './tests',
-  outputDir: './test-results',
+  testDir: './output/tests',
+  outputDir: './output/test-results',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -19,7 +19,7 @@ export default defineConfig({
   expect: { timeout: slow ? 30_000 : 10_000 },
 
   reporter: [
-    ['html', { open: 'never', outputFolder: './playwright-report' }],
+    ['html', { open: 'never', outputFolder: './output/playwright-report' }],
     ['list'],
   ],
 

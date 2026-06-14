@@ -1,10 +1,11 @@
 import rawCfg from '../config/test.config.json';
 
 export type PortalName = 'admin' | 'partner' | 'customer';
-export type AccountName = 'portalAdmin' | 'partner' | 'customerIndividual' | 'customerCompany';
+export type AccountName = 'portalAdmin' | 'noPermAdmin' | 'partner' | 'customerIndividual' | 'customerCompany';
 
 const ACCOUNT_PORTAL_MAP: Record<AccountName, PortalName> = {
   portalAdmin:        'admin',
+  noPermAdmin:        'admin',
   partner:            'partner',
   customerIndividual: 'customer',
   customerCompany:    'customer',

@@ -17,6 +17,9 @@ type ResponseLike = {
   json(): Promise<unknown>;
 };
 
+/** API bootstrap (đăng nhập → vào màn) — KHÔNG ghi vào evidence (Rule 21.1). */
+const BOOTSTRAP_API = /auth\/(login|refresh|logout)|me\/userinfo|me\/permissions|groups\/checkbox|\/iam\/me\b|notifications?(\b|\/|\?)/i;
+
 /**
  * Gắn listener lên page để capture mọi API response trong suốt test.
  * - Bỏ qua static assets (js/css/font/image).
@@ -30,8 +33,13 @@ export function setupApiMonitor(
   isMainApi: (res: ResponseLike) => boolean,
 ): void {
   page.on('response', async res => {
+    // CHỈ Fetch/XHR (Rule 21.1) — bỏ document/script/css/img/font
+    const rtype = (res.request() as { resourceType?: () => string }).resourceType?.();
+    if (rtype && rtype !== 'fetch' && rtype !== 'xhr') return;
     if (/\.(js|css|png|jpg|jpeg|ico|woff2?|ttf|eot|svg|map|gif|webp)$/i.test(res.url())) return;
     if (/\/(static|assets|_next|__webpack)\//.test(res.url())) return;
+    // Bỏ API bootstrap (login → vào màn)
+    if (BOOTSTRAP_API.test(res.url())) return;
 
     const entry: ApiLogEntry = {
       method: res.request().method(),

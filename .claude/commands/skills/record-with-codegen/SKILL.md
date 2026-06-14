@@ -40,7 +40,7 @@ Codegen output là **bản nháp**. Với mỗi element, áp skill `smart-locato
 - Sinh `fallback`.
 
 ### Bước 4 — Ghi vào repository
-- Ghi/merge vào `locators/<screen>.screen.json` theo format trong `locator_repository.md`.
+- Ghi/merge vào `output/locators/<screen>.screen.json` theo format trong `locator_repository.md`.
 - Gắn `verifiedStates` theo state lúc record (vd nếu record sau khi submit sai → `after-invalid-login`).
 - Cập nhật `lastVerified`.
 

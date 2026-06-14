@@ -17,6 +17,6 @@
       "@config": ["src/config.ts"]
     }
   },
-  "include": ["src/**/*", "tests/**/*", "playwright.config.ts"],
+  "include": ["src/**/*", "output/pages/**/*", "output/tests/**/*", "playwright.config.ts"],
   "exclude": ["node_modules", "dist"]
 }

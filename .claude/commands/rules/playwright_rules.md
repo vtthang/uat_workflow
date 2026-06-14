@@ -168,7 +168,7 @@ Trim PHẢI kiểm bằng request body, KHÔNG đoán qua UI. Xem `test_executio
 ```typescript
 // Scroll đến element cần chụp evidence, rồi mới screenshot
 await errorLocator.scrollIntoViewIfNeeded();
-await page.screenshot({ path: `evidence/${tcId}/03_error_shown.png`, fullPage: true });
+await page.screenshot({ path: `output/evidence/${tcId}/03_error_shown.png`, fullPage: true });
 ```
 
 Chụp ở mốc quan trọng mỗi case (sau fill, sau submit, tại assert) + khi fail. Trace: `--trace on-first-retry`. Xem `test_execution_rules.md` mục 5.

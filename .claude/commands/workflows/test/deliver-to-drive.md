@@ -1,6 +1,6 @@
-# Deliver Evidence & Report lên Google Drive
+# Deliver Evidence & Report
 
-> Sinh HTML report từ evidence local → upload lên Google Drive theo cấu trúc `env > portal > module > feature` → xoá local để tránh nặng máy.
+> ⚠️ **Upload Google Drive đã NGỪNG dùng.** Pipeline hiện chỉ **sinh HTML report tại local** (`output/reports/`) — xem `html_report_rules.md`. KHÔNG upload Drive, KHÔNG xoá local. Các phần dưới về Drive giữ lại chỉ để tham khảo, **không thực thi** trừ khi user yêu cầu rõ.
 
 ## Input — tự động, không hỏi user
 
@@ -8,16 +8,16 @@ Resolve theo thứ tự ưu tiên, **không hỏi user**:
 
 | Biến | Cách lấy tự động |
 |---|---|
-| `mdPath` | Đọc từ `task.md` mục Handoff. Nếu không có → lấy file `.md` mới nhất trong `testcase/`. Nếu nhiều file → lấy file được modified gần nhất. |
+| `mdPath` | Đọc từ `task.md` mục Handoff. Nếu không có → lấy file `.md` mới nhất trong `output/testcase/`. Nếu nhiều file → lấy file được modified gần nhất. |
 | `env` | Đọc từ `task.md` → fallback `uat` |
 | `portal` | Đọc từ `task.md` → fallback `admin` |
-| `module` | Tên thư mục cha trong `testcase/<portal>/` → fallback tên file bỏ prefix |
+| `module` | Tên thư mục cha trong `output/testcase/<portal>/` → fallback tên file bỏ prefix |
 | `featureName` | Tên file md bỏ `KBKT_UAT_` và đuôi |
 | `runDate` | Ngày hôm nay `YYYY-MM-DD` |
 
 **Evidence path local** (đã có cấu trúc sẵn):
 ```
-evidence/<env>/<portal>/<module>/<function>/
+output/evidence/<env>/<portal>/<module>/<function>/
   [TC-01][tc-name][step].png
   [TC-01][tc-name][step2].png
   [TC-02][tc-name][step].png
@@ -25,7 +25,7 @@ evidence/<env>/<portal>/<module>/<function>/
   <slug>_main-api-response.json
   ...
 ```
-VD: `evidence/uat/admin/user-management/tao-moi/`
+VD: `output/evidence/uat/admin/user-management/tao-moi/`
 
 **Lưu ý:** Không có subfolder per TC — tất cả TC của cùng module/function nằm chung 1 thư mục, phân biệt qua tên file `[TC-ID][...]`.
 
@@ -51,14 +51,14 @@ TPcoms_UAT/              ← root (ID cố định)
 
 ### Bước 1 — Kiểm tra evidence (theo `report_rules.md § 5`)
 
-Trước khi gen report, scan `evidence/<env>/<portal>/<module>/<feature>/` và log những gì còn thiếu (không dừng, chỉ ghi nhận):
+Trước khi gen report, scan `output/evidence/<env>/<portal>/<module>/<feature>/` và log những gì còn thiếu (không dừng, chỉ ghi nhận):
 
 - Mỗi TC có `TC-XX_network-log.json`?
 - TC xem danh sách: có `TC-XX_data-mapping.json` + `TC-XX_api-response.json`?
 - TC tìm kiếm: có `TC-XX_search-count.json` + `TC-XX_api-response.json`?
 - TC lọc: có `TC-XX_filter-count.json` + `TC-XX_api-response.json`?
 
-Ghi thiếu vào `pipeline_report.md` dưới dạng cảnh báo ⚠️, sau đó tiếp tục.
+Ghi thiếu vào `output/pipeline_report.md` dưới dạng cảnh báo ⚠️, sau đó tiếp tục.
 
 ---
 
@@ -113,11 +113,11 @@ Ghi lại Drive file URL trả về.
 Chỉ xoá sau khi upload thành công (có file ID trả về):
 
 ```bash
-rm -rf evidence/<env>/<portal>/<module>/<featureName>/
+rm -rf output/evidence/<env>/<portal>/<module>/<featureName>/
 rm -rf report/
 ```
 
-Chỉ xoá đúng thư mục feature vừa upload — **không xoá toàn bộ `evidence/`** để tránh mất evidence của feature khác.
+Chỉ xoá đúng thư mục feature vừa upload — **không xoá toàn bộ `output/evidence/`** để tránh mất evidence của feature khác.
 
 Không xoá nếu upload chưa có file ID (tránh mất data khi lỗi).
 
@@ -134,7 +134,7 @@ Báo user:
 📄 Report: <Drive file URL>
 
 🗑️ Local files đã xoá:
-   - evidence/ (N TC, M screenshots)
+   - output/evidence/ (N TC, M screenshots)
    - report/<filename>.html
 
 Truy cập Drive để xem report: <folder URL>

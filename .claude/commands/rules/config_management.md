@@ -67,7 +67,7 @@ await loginPage.login(admin.username, admin.password);
 |---|---|
 | Môi trường, base URL, account (username), role | `config/test.config.json` |
 | Password / token (giá trị thật) | `.env` (gitignore) |
-| Locator theo màn | `locators/<screen>.screen.json` |
+| Locator theo màn | `output/locators/<screen>.screen.json` |
 | Test data động (email random...) | sinh runtime qua `test-data-generator` |
 
 Đừng trộn: config = cố định + bí mật-tham-chiếu; test data = sinh động per-run; locator = element map.

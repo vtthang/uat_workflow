@@ -39,5 +39,3 @@ Trước khi đưa locator vào code, phải kiểm tra:
 
 Chi tiết locator cho từng framework xem tại:
 - Playwright: `.claude/commands/rules/playwright_rules.md` (Section 3)
-- Selenium: `.claude/commands/rules/selenium_rules.md` (Section 1)
-- Appium: `.claude/commands/rules/appium_rules.md` (Section 1)

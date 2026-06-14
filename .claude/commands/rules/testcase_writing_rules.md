@@ -135,7 +135,7 @@ Khi cần verify kết quả sau khi rời khỏi field, phải có bước "Cli
 
 ---
 
-## RULE 8 — Pipeline: Sinh file testcase ngay, không hỏi confirm
+## QUY TẮC PIPELINE — Sinh file testcase ngay, không hỏi confirm
 
 **Rule:** Trong pipeline `/full-pipeline` và `/gen-uat` (khi user đã xác nhận bắt đầu), **sinh file `.md` ngay sau khi phân tích spec xong**, KHÔNG list TC rồi hỏi "có sinh không?".
 
@@ -325,6 +325,220 @@ Kết quả mong muốn:
 
 ---
 
+## RULE 10 — Phân quyền: sinh deny-case từ happy path (cross-cutting)
+
+Phân quyền là quan hệ **role × action**, không thuộc riêng Transaction nào. Vì vậy **không gen lẫn vào TC feature** — sinh thành nhóm TC riêng `TC-PERM-*`, derive trực tiếp từ happy path của chính Use-case.
+
+### 10.1 — Nguồn: mỗi happy path = một action cần bảo vệ
+
+Liệt kê các happy path của Use-case → đó chính là danh sách action cần check quyền (view / create / edit / delete / action nghiệp vụ). Không cần khai báo ma trận quyền tay — lấy thẳng từ happy path.
+
+### 10.2 — Đúng quyền test mọi case; sai quyền chỉ test happy → assert lỗi
+
+| Phía | Test gì | Sinh ở đâu |
+|---|---|---|
+| **Đúng quyền** (role được phép) | **Mọi case** của tính năng (đầy đủ field validation, luồng, biên...) | Chính các **TC feature** chạy bằng role được phép — không sinh lại trong TC-PERM |
+| **Sai quyền** (role không được phép) | **Chỉ 1 case happy** mỗi action → assert **bị chặn / hiển thị lỗi** | Nhóm **TC-PERM** |
+
+→ TC-PERM chỉ mô tả **role KHÔNG được phép** thực hiện happy path và kỳ vọng bị chặn (không cần lặp lại các nhánh validate/biên ở phía sai quyền — chặn ở cửa thì các nhánh con vô nghĩa).
+
+### 10.3 — Gộp theo độ chặn (coarse vs fine)
+
+| Trường hợp | Cách sinh TC |
+|---|---|
+| **A — Role bị chặn ngay cửa** (không vào được màn) | **1 TC coarse/role** cho cả Use-case. Bỏ qua action lẻ — đã bị chặn từ vòng ngoài thì không cần check từng nút |
+| **B — Role vào được màn nhưng giới hạn action** (vd: xem được nhưng không sửa được) | **1 deny-case kèm mỗi happy path** của action bị giới hạn |
+
+### 10.4 — Biểu hiện "deny" phải ghi rõ trong kết quả mong muốn
+
+Trích đúng cách hệ thống chặn (hỏi BA/Dev nếu spec không nói, ghi `[TBD]`):
+- Menu/route ẩn → "Mục [X] không hiển thị trong menu của role [Y]"
+- Redirect/403 → "Gõ thẳng URL [route] → bị đẩy về [trang], hoặc hiển thị trang 403"
+- Nút ẩn/disabled → "Nút [Thêm/Sửa/Xóa] không hiển thị / ở trạng thái disabled"
+- API 403 → "API [endpoint] trả 403, UI hiển thị [thông báo không có quyền]"
+
+### 10.5 — Account đóng vai (persona) lấy từ config, không tạo runtime
+
+- Role để login lấy từ `config/test.config.json` (`accounts.<persona>.role`) — xem `config_management.md`.
+- **Actor account là bất biến**: TC feature (toggle/xóa/sửa) chỉ được thao tác lên **test-data account tự tạo**, TUYỆT ĐỐI không đụng persona dùng để login.
+- Cross-portal (3 domain riêng): "role kia không vào được" thực chất là **account đó không đăng nhập được vào portal này** → deny ở tầng đăng nhập, TC ghi rõ.
+
+### 10.6 — Format nhóm TC-PERM
+
+```
+### Phân quyền (TC-PERM)
+
+#### TC-PERM-01: [Role] không có quyền [action/truy cập màn]
+
+**Actor:** [Role bị từ chối — vd PORTAL_PARTNER]
+**Loại luồng:** Unhappy Path (Authorization)
+**Precondition:** Đăng nhập bằng account role [Y] (persona: partner)
+**Dữ liệu mẫu:** —
+
+**Các bước:**
+1. Đăng nhập bằng account role [Y]
+2. Truy cập [đường dẫn màn / gõ URL trực tiếp]
+
+**Kết quả mong muốn:**
+2.1. [Biểu hiện deny cụ thể theo 10.4]
+```
+
+---
+
+## RULE 11 — Đa ngôn ngữ: không sinh case mới, mỗi TC khẳng định ngôn ngữ (cross-cutting)
+
+Đa ngôn ngữ **không phải case mới** — cùng một testcase chạy lại ở ngôn ngữ khác, chỉ chữ hiển thị đổi. **Không** viết lại TC cho từng ngôn ngữ.
+
+### 11.1 — Confirm ngôn ngữ ở đầu (Bước 1 của gen-uat)
+
+Trước khi gen: xác nhận hệ thống hỗ trợ những ngôn ngữ nào + ngôn ngữ chính (primary) để chạy round mặc định. Mặc định primary = tiếng Việt.
+
+### 11.2 — Mọi TC bắt buộc có mục "Ngôn ngữ hiển thị"
+
+Thêm vào "Kết quả mong muốn" của **mọi** TC một mục chuẩn (template cố định, gen-uat tự chèn):
+
+```
+**Ngôn ngữ hiển thị:** Toàn bộ nội dung, nhãn trường, placeholder, nút, thông báo lỗi và toast đều hiển thị ĐỒNG NHẤT bằng ngôn ngữ đang chọn (tiếng Việt) — KHÔNG lẫn bất kỳ ngôn ngữ khác (tiếng Anh), không lòi key thô (vd "error.emailExists").
+```
+
+**Nguyên tắc cốt lõi (A4):** khi đang ở 1 ngôn ngữ, **tuyệt đối không có chữ của ngôn ngữ khác xuất hiện** trên màn — kể cả 1 nút/label sót. Đây là điểm kiểm bắt buộc, không chỉ "label chính đúng".
+
+### 11.3 — Error / toast trích nguyên văn ngôn ngữ chính
+
+Mọi thông báo lỗi/toast/dialog phải ghi **nguyên văn tiếng Việt** (đã yêu cầu ở RULE 2/8) — không vague kiểu "hiển thị thông báo lỗi". Các chuỗi này chính là **nguồn của `t()`** khi sinh code (Phase 2): muốn chạy được ngôn ngữ thứ 2 sau này, expected result tiếng Việt phải đủ và chính xác ngay từ Phase 1.
+
+### 11.4 — Verify ngôn ngữ thứ 2 = gate "no-leak" nhẹ, KHÔNG re-run cả suite
+
+Khi user yêu cầu chạy ngôn ngữ khác (vd EN), **không** parameterize lại toàn bộ assertion / không nhân bản script. Mục tiêu thực tế thường chỉ là: **ở ngôn ngữ đang chọn, NGOÀI dữ liệu từ API ra, không còn chữ của ngôn ngữ gốc trên màn.** Cách enforce:
+
+- Sinh 1 spec mỏng `i18n-<locale>.spec.ts` (ví dụ `TC-I18N-01..N`), mỗi màn chính (list / create / detail / edit / history / popup) = 1 TC: đổi ngôn ngữ → screenshot → **quét text tĩnh (chrome)** → assert KHÔNG còn ký tự ngôn ngữ gốc.
+- **Phát hiện tiếng Việt** = regex ký tự có dấu đặc trưng (ă â đ ê ô ơ ư + nguyên âm có dấu) — tiếng Anh không có.
+- **LOẠI dữ liệu API (bắt buộc)** khỏi vùng quét, nếu không sẽ false-positive: `tbody` (giá trị dòng), `input/textarea` value, `select`/`[role=combobox]`/`[role=listbox]`/`[role=option]` (giá trị đã chọn), `[role=switch]`, **trigger dropdown** (`[aria-haspopup]` / class field) hiển thị giá trị đã chọn, và **label của checkbox/radio** (liên kết qua `label.control`, qua `for=`, hoặc sibling kiểu Tailwind `peer` trong cùng parent) — đây là tên nhóm quyền/role do user tạo. Tên ngôn ngữ trong dropdown (vd "Tiếng Việt") hiển thị dạng bản địa là **chuẩn UX**, không tính lỗi.
+- Quét vào các selector chrome: `thead th`, `button` (action), `label` (field), `[placeholder]`, `[role=tab]`, `h1..h4`, `nav a`, toast/empty-state/pagination.
+- Helper tái dùng đặt trong POM: `switchToEnglish()` + `findVietnameseInChrome()` (xem `UserManagementPage`). Navigation trong round EN phải **EN-robust** (mở row trực tiếp/qua URL, không locate theo text/placeholder tiếng Việt vì chúng đã đổi).
+
+**11.4b — Bắt buộc phủ ERROR / TOAST / DIALOG, không chỉ màn tĩnh.** Quét chrome màn tĩnh là CHƯA đủ — phần lớn chuỗi i18n nằm ở message động chỉ hiện khi trigger. Sinh thêm spec `i18n-<locale>-errors.spec.ts` trigger **từng họ message** ở ngôn ngữ đích rồi assert không còn ngôn ngữ gốc:
+- **Inline validation:** required (submit rỗng), sai định dạng (email), maxlength (>max), ký tự không hợp lệ.
+- **Business message (server):** trùng email/SĐT, ... — đọc message trả về sau submit.
+- **Dialog xác nhận:** reset / toggle / xóa — **loại tên/đối tượng (data)** khỏi text trước khi soi (vd `dialogText.replace(accountName,'')`).
+- **Toast tự biến mất:** dùng MutationObserver spy (`installToastSpy()` TRƯỚC khi trigger, `collectedToasts()` sau) vì toast thường không có class `toast`/`role=alert` và biến mất nhanh — phải bắt lúc đang hiện + assert toast CÓ xuất hiện (proof) và không phải ngôn ngữ gốc.
+- Trigger ở locale đích cần locator **EN-robust** (theo `input[name=...]`, `type`, regex `VI|EN` cho nút) vì locator theo text/placeholder tiếng Việt đã đổi. Setup data có thể tạo ở ngôn ngữ gốc rồi mới đổi locale.
+
+Việc verify ngôn ngữ đồng nhất (mục 11.2) vẫn ghi trong từng TC chức năng; nhưng **enforcement** cho ngôn ngữ thứ 2 = gate no-leak (11.4) **+** phủ message động (11.4b).
+
+---
+
+## RULE 11b — VALIDATION COVERAGE GATE (cưỡng chế — không được thiếu)
+
+> Lỗi từng gặp: RULE 12–15 chỉ là mô tả "phải làm" → khi gen bị rút gọn theo phán đoán, thiếu field mà không ai phát hiện. Rule này biến coverage thành **bắt buộc kiểm**.
+
+**Áp dụng cho MỌI form có field nhập** — tạo / sửa / **reset mật khẩu** / popup nhập liệu (vd "nhập lại mật khẩu phải khớp" cũng là validate). Với MỖI field sinh đủ ô ma trận sau (mỗi ô = 1 TC **hoặc** ghi `N/A — lý do`, KHÔNG để trống):
+
+| Ràng buộc field | Case bắt buộc sinh |
+|---|---|
+| **Bắt buộc** | (1) để trống + **outfocus** → lỗi · (2) để trống + **submit** → lỗi — **2 TC TÁCH BIỆT** |
+| **Không bắt buộc** | (1) để trống → **không** có lỗi |
+| **Max/min length** | (1) biên hợp lệ ok · (2) quá biên + **outfocus** → lỗi · (3) quá biên + **submit** → lỗi — **tách biệt** |
+| **Ký tự hợp lệ** | (1) hợp lệ ok · (2) không hợp lệ → lỗi |
+| **Trùng (unique)** | tạo trước → nhập trùng → lỗi exact SRS |
+| **Default value** | màn sửa/duyệt: tự tạo → mở lại verify đúng giá trị |
+| **Dropdown/checkbox** | theo selected/checked |
+
+**Nguyên tắc 2 hướng = 2 case tách biệt** (CRITICAL theo yêu cầu): chỗ nào có "outfocus" và "submit" → **PHẢI là 2 TC riêng**, không gộp — để verify được từng hướng độc lập.
+
+**Clear-first**: màn sửa (field có sẵn giá trị) → mọi case validate phải **clear field trước** rồi mới trigger.
+
+**Gate (trước Phase 2):** đối chiếu danh sách field SRS ↔ testcase. Field nào thiếu ô bắt buộc → **fail gate, bổ sung** trước khi sang automation. Cô lập field: khi test 1 field, mọi field khác điền hợp lệ (xem `test_execution_rules.md` mục 2).
+
+---
+
+## RULE 12 — Validate field: Giá trị mặc định
+
+Áp dụng cho **mọi field** có giá trị mặc định theo SRS. Đặc biệt bắt buộc với màn **Sửa / Phê duyệt / Xoá / Chi tiết** — nơi default phải là **đúng giá trị của bản ghi**.
+
+- **Cách kiểm (edit/duyệt/xoá):** Tự tạo mới một bản ghi với giá trị đã biết → vào màn đang test → verify từng field hiển thị **đúng giá trị vừa tạo** (không chỉ "khác rỗng").
+- TC ghi rõ giá trị mặc định kỳ vọng cụ thể (RULE 4), không viết "hiển thị giá trị mặc định" chung chung.
+- Triển khai automation: xem `test_execution_rules.md` mục 2b (tạo qua API → `toBe(value)`).
+
+---
+
+## RULE 13 — Validate field: Trường bắt buộc / không bắt buộc
+
+Với **mỗi field**, xác định bắt buộc hay không theo SRS:
+
+**Field bắt buộc → sinh 2 TC theo 2 hướng trigger:**
+| Hướng | Thao tác | Kỳ vọng |
+|---|---|---|
+| Outfocus | Để trống → click ra ngoài field | inline message **exact SRS** |
+| Submit | Để trống → nhấn Confirm/Submit | message lỗi **exact SRS** + ở lại màn (RULE 3) |
+
+**Field KHÔNG bắt buộc → 1 TC:** để trống → submit → **không hiển thị error message** cho field đó.
+
+**Chú ý đặc biệt (clear-first):** nếu field đang có giá trị mặc định khác rỗng → TC phải có bước **clear field trước** rồi mới thực hiện 2 hướng trên (xem `generate-automation-from-testcases.md` Bước 5 cách clear theo loại field).
+
+---
+
+## RULE 14 — Validate field: Độ dài & Ký tự (ISTQB BVA + EP)
+
+Dùng skill `testcase-design` (ISTQB). Áp dụng cho field có ràng buộc trong SRS.
+
+**14.1 — Min/max length (Boundary Value Analysis):**
+- Sinh case: `min-1` (❌), `min` (✅), `max` (✅), `max+1` (❌). (Thêm `min+1`/`max-1` nếu cần coverage cao.)
+- Mỗi case **invalid** kiểm theo **2 hướng** như RULE 13 (outfocus + submit), kèm clear-first nếu có default.
+- **Khi nhập QUÁ max — kiểm 2 thứ (BẮT BUỘC, gõ thật bằng `pressSequentially` chứ không `fill` để không bypass maxlength):**
+  1. **Đếm lại độ dài thực tế** sau khi nhập → field có bị **cắt = max** không (`actualLength`).
+  2. **Nếu `actualLength > max` → PHẢI có error message.** (Không cắt mà cũng không báo lỗi = **defect**.)
+- Ghi `actualLength` vào evidence (`<tc>_maxlength.json`). Message lỗi **exact SRS**.
+
+**14.2 — Ký tự hợp lệ (Equivalence Partitioning):**
+- SRS **không ràng buộc** ký tự → 1 TC: nhập đủ loại ký tự → **không lỗi**.
+- SRS **có ràng buộc** → mỗi lớp tương đương 1 đại diện: 1 case valid + 1 case mỗi lớp invalid (chữ/số/ký tự đặc biệt/khoảng trắng...) → error exact SRS.
+
+---
+
+## RULE 15 — Validate: Trùng dữ liệu & Dropdown / Checkbox
+
+**15.1 — Trùng dữ liệu (unique constraint):**
+- **Tạo trước** một bản ghi → dùng chính giá trị đã tồn tại để test trùng → assert error message **exact SRS**.
+- Không giả định data có sẵn trong hệ thống — tự tạo để chủ động (xem `test_execution_rules.md` mục 8 + API helper).
+
+**15.2 — Dropdown / Checkbox:**
+- Kết quả phụ thuộc **giá trị được chọn (selected) / được tick (checked)** — TC ghi rõ option chọn và kỳ vọng tương ứng.
+- Nhiều điều kiện kết hợp (combo dropdown + checkbox) → dùng **Decision Table** (skill `testcase-design`) để phủ tổ hợp.
+
+---
+
+## RULE 16 — Luồng nghiệp vụ: hậu điều kiện bắt buộc + case không dữ liệu
+
+**16.1 — Happy path phải verify HẬU ĐIỀU KIỆN (không dừng ở thông báo):**
+
+| Thao tác | TC phải verify thêm sau thông báo |
+|---|---|
+| **Thêm mới** | Item hiện ở danh sách → **search ra đúng item vừa thêm** |
+| **Sửa** | **Mở lại item** → mọi field đã cập nhật đúng giá trị mới |
+| **Xoá** | Item **không còn** trong danh sách (search không ra) |
+| **Phê duyệt / Từ chối** | **Trạng thái item** đổi đúng (kiểm lại trên list/detail) |
+
+Mọi happy path: thông báo thành công **exact SRS** (RULE 2).
+
+**16.2 — Invalid path:** sinh các nhánh thất bại theo SRS (validate, lỗi server) — đối chiếu RULE 8 (API response).
+
+**16.3 — Case "không có dữ liệu":** màn danh sách luôn có TC empty-state. Khi môi trường khó tạo trạng thái rỗng → automation **chặn/giả response API** để ép empty (xem `test_execution_rules.md` mục 19). TC ghi rõ thông báo empty **exact SRS**.
+
+**16.4 — Search dựa trên dữ liệu có thật:** keyword tìm kiếm phải lấy từ item đang có trong danh sách để đảm bảo tìm đúng (không hardcode keyword) — triển khai xem `test_execution_rules.md` mục 14c.
+
+---
+
+## RULE 17 — Nghiệp vụ liên quan & System Knowledge
+
+Test một tính năng không tách rời — phải xét **ảnh hưởng chéo** với tính năng khác.
+
+- **Trước khi xác định TC:** đọc `knowledge/system-features.md` → tìm tính năng liên quan tới tính năng đang test (chung entity, chung màn, nối luồng, đổi trạng thái dùng chung). Bổ sung TC kiểm tra ảnh hưởng chéo nếu có.
+- **Sau khi gen/test xong:** **cập nhật** `knowledge/system-features.md` — thêm/sửa entry cho tính năng vừa làm + ghi quan hệ với tính năng khác (theo template trong file đó).
+- Khi có tính năng mới → luôn soi lại bản đồ này để biết nó có thể bị ảnh hưởng / gây ảnh hưởng tới đâu.
+
+---
+
 ## CHECKLIST bổ sung (áp dụng thêm vào checklist gốc)
 
 - [ ] Kết quả sau redirect: mô tả trạng thái trên màn hình đích, không tách rời
@@ -337,3 +551,17 @@ Kết quả mong muốn:
 - [ ] Action gọi API: có mô tả kết quả cho cả 200 và 400/error case (Rule 8)
 - [ ] Màn hình danh sách có phân trang: đủ TC-Px ~ TC-Px+7, thêm TC-Px+8 nếu có dropdown page size (Rule 9)
 - [ ] Pagination: có đủ case trang tiếp, trang trước, trang bất kỳ, trang đầu, trang cuối, trạng thái disabled ở biên
+- [ ] Phân quyền: có nhóm TC-PERM derive từ happy path; đúng quyền test mọi case (TC feature), sai quyền test happy→lỗi; gộp coarse/fine đúng (Rule 10)
+- [ ] Phân quyền: role lấy từ persona trong config, không tạo runtime; TC feature không đụng persona account (Rule 10.5)
+- [ ] Đa ngôn ngữ: đã confirm ngôn ngữ ở đầu; mọi TC có mục "Ngôn ngữ hiển thị" (đồng nhất, không lẫn ngôn ngữ khác); error/toast nguyên văn tiếng Việt; KHÔNG tạo nhóm TC i18n riêng (Rule 11)
+
+**Field validation (ISTQB — skill `testcase-design`)**
+- [ ] Giá trị mặc định: mọi field; màn sửa/duyệt/xoá tự tạo→verify đúng giá trị (Rule 12)
+- [ ] Trường bắt buộc: 2 hướng (outfocus + submit); không bắt buộc → no error; clear-first nếu có default (Rule 13)
+- [ ] Độ dài: BVA min-1/min/max/max+1; ký tự: EP valid + mỗi lớp invalid; message exact SRS (Rule 14)
+- [ ] Trùng dữ liệu: tạo trước rồi test trùng, message exact; dropdown/checkbox theo selected/checked, combo → decision table (Rule 15)
+
+**Luồng nghiệp vụ & liên quan**
+- [ ] Happy path verify hậu điều kiện: thêm→search ra, sửa→mở lại đúng, xoá→mất, duyệt→đổi status (Rule 16.1)
+- [ ] Có case không-dữ-liệu (empty state) + search dùng keyword từ data thật (Rule 16.3–16.4)
+- [ ] Đã đọc & cập nhật `knowledge/system-features.md`; bổ sung TC ảnh hưởng chéo nếu có (Rule 17)

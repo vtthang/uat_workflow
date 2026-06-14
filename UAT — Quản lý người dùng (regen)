@@ -1,0 +1,28 @@
+<!doctype html><html lang=vi><head><meta charset=utf-8><title>UAT Report</title><style>
+*{box-sizing:border-box} body{font-family:Open Sans,Arial,sans-serif;margin:0;background:#f5f6f8;color:#222}
+.layout{display:flex;align-items:flex-start}
+.side{position:sticky;top:0;height:100vh;overflow:auto;width:250px;flex:0 0 250px;background:#1f2937;color:#e5e7eb;padding:16px 12px}
+.side h3{margin:0 0 10px;font-size:15px;color:#fff} .side a{display:flex;align-items:center;gap:6px;color:#cbd5e1;text-decoration:none;padding:7px 8px;border-radius:6px;font-size:13px}
+.side a:hover{background:#374151;color:#fff} .navn{margin-left:auto;background:#374151;border-radius:10px;padding:0 7px;font-size:11px} .navfail{margin-left:6px;background:#c0392b;color:#fff;border-radius:10px;padding:0 7px;font-size:11px}
+.navgroup{margin:2px 0 8px} .navhead{font-weight:700;color:#fff !important;font-size:13px;border-top:1px solid #374151;margin-top:4px} .navsub{padding-left:20px !important;font-size:12px;color:#9aa6b5}
+h1.uc{font-size:20px;margin:30px 0 4px;color:#1f2937;border-bottom:3px solid #1f2937;padding-bottom:6px;scroll-margin-top:10px}
+.main{flex:1;padding:24px;min-width:0} h1{margin:0} h4{margin:12px 0 4px}
+.sum{font-size:18px;margin:8px 0 16px} .ok{color:#1a7f37;font-weight:700} .ng{color:#c0392b;font-weight:700}
+.failbox{background:#fff4f3;border:1px solid #f3b4ad;border-radius:10px;padding:12px 16px;margin:0 0 20px} .failbox h2{margin:0 0 8px;color:#c0392b;font-size:17px}
+.failbox ul{margin:0;padding-left:18px} .failbox li{margin:6px 0} .failbox a{color:#c0392b;font-weight:600;text-decoration:none} .failbox a:hover{text-decoration:underline} .failnote{font-size:12px;color:#7a3b35;margin:2px 0 0}
+.okbox{background:#e6f4ea;border:1px solid #a7d8b5;border-radius:10px;padding:12px 16px;margin:0 0 20px;color:#1a7f37;font-weight:600}
+h2.grp{margin:26px 0 6px;border-bottom:2px solid #ccd;padding-bottom:5px;scroll-margin-top:10px} .grpc{font-size:13px;font-weight:400;color:#666;margin-left:8px}
+.card{background:#fff;border-radius:10px;padding:14px;margin:12px 0;box-shadow:0 1px 4px #0001;border-left:6px solid #1a7f37;scroll-margin-top:10px} .card.fail{border-left-color:#c0392b} .card.skip{border-left-color:#999}
+.badge{float:right;font-size:12px;padding:2px 10px;border-radius:12px;background:#e6f4ea;color:#1a7f37} .card.fail .badge{background:#fdecea;color:#c0392b}
+.meta{font-size:13px;margin:6px 0} .box{background:#fafafa;border:1px solid #eee;border-radius:6px;padding:6px 10px;margin:3px 0 8px;white-space:normal}
+.shots{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0} figure{margin:0} .shots img{max-width:360px;border:1px solid #ddd;border-radius:6px;display:block} figcaption{font-size:11px;color:#666}
+.muted{color:#999;font-size:12px} table.api{border-collapse:collapse;font-size:12px} table.api td,table.api th{border:1px solid #e0e0e0;padding:3px 8px;text-align:left;vertical-align:top}
+tr.main{background:#f3e8ff;font-weight:600} .mb{background:#7c3aed;color:#fff;font-size:10px;padding:1px 5px;border-radius:8px}
+.cb{background:#eef6ff;border:1px solid #cfe3ff;padding:7px;border-radius:6px;font-size:13px;margin:6px 0}
+details{margin:5px 0;font-size:12px} summary{cursor:pointer;color:#7c3aed;font-weight:600} pre{background:#1e1e1e;color:#d4d4d4;padding:10px;border-radius:6px;overflow:auto;max-height:320px;font-size:11px}</style></head>
+<body><div class=layout>
+<nav class=side><h3>📋 Tính năng</h3><a href="#top">⬆ Đầu trang</a></nav>
+<div class=main><h1 id=top>UAT Report</h1>
+<div class=sum>UAT · headless · <span class=ok>0 PASS</span> / <span class=ng>0 FAIL</span> · 0 TC có evidence</div>
+<div class=okbox>✅ Không có case FAIL</div>
+</div></div></body></html>

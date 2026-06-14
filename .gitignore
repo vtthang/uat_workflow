@@ -1,0 +1,17 @@
+# Output — toàn bộ artifact chạy pipeline; loại bỏ khi gửi cho người khác
+output/
+
+# Legacy output paths (đã gom vào output/)
+test-results/
+playwright-report/
+evidence/
+
+# Dependencies
+node_modules/
+
+# Secrets — chỉ commit .env.example, không commit .env thật
+.env
+.auth/
+
+# macOS
+.DS_Store

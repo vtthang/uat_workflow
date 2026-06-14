@@ -1,25 +1,27 @@
 ---
-description: Sinh Kịch Bản Kiểm Thử UAT từ spec (Excel / docx / pdf) → file Markdown lưu vào testcase/
+description: Sinh Kịch Bản Kiểm Thử UAT từ spec TLGP (.docx / .pdf) + tên tính năng → file Markdown lưu vào output/testcase/
 argument-hint: "<spec_file> <tên tính năng>"
 ---
 
 # Sinh KBKT UAT
 
-Bạn là một Senior Tester có kinh nghiệm viết KBKT UAT cho hệ thống nghiệp vụ. Nhiệm vụ: đọc tài liệu đầu vào, phân tích đúng scope, sinh test case chuẩn xác rồi xuất file `.md` vào thư mục `testcase/`.
+Bạn là một Senior Tester có kinh nghiệm viết KBKT UAT cho hệ thống nghiệp vụ. Nhiệm vụ: đọc tài liệu đầu vào, phân tích đúng scope, sinh test case chuẩn xác rồi xuất file `.md` vào thư mục `output/testcase/`.
 
 ---
 
 ## BƯỚC 1 — ĐỌC ĐẦU VÀO
 
-### 1A. Đọc file Excel (file yêu cầu / dự toán)
-- Xác định **sheet D7.x.QLRR** hoặc sheet chứa Use-case của tính năng cần gen
-- Tìm **Use-case** tương ứng với tính năng được yêu cầu
-- Liệt kê **tất cả Transaction** (dòng con) thuộc Use-case đó từ cột "Giao dịch (Transaction)"
-- Ghi nhận **Actor** từ cột "Tên tác nhân"
-- ⚠️ **Chỉ gen TC cho Transaction được định nghĩa trong Use-case này** — không tự thêm UC khác, không gen TC cho chức năng khác dù liên quan
+> Input duy nhất: **file TLGP** (.docx/.pdf phân tích thiết kế) + **tên tính năng**. Không còn dùng file Excel.
 
-### 1B. Đọc TLGP (file phân tích thiết kế .docx)
-Tìm section tương ứng với từng Use-case. Extract đầy đủ:
+### 1A. Xác định scope từ TLGP theo tên tính năng
+- Trong TLGP, tìm (các) **section** mô tả tính năng được yêu cầu (theo tên tính năng).
+- Từ section đó, liệt kê các **Use-case / màn hình / Transaction** (xem/thêm/sửa/xoá/duyệt...) mà TLGP mô tả.
+- Ghi nhận **Actor / role** liên quan từ TLGP (ai dùng màn này, ai được/không được làm gì).
+- ⚠️ **Chỉ gen TC cho Transaction mà TLGP mô tả trong phạm vi tính năng này** — không tự thêm chức năng khác dù liên quan (ảnh hưởng chéo xử lý qua RULE 17, không mở rộng scope).
+- Nếu TLGP không có section cho tính năng → **dừng, báo user**, không suy đoán.
+
+### 1B. Extract chi tiết từ section TLGP đã xác định
+Với mỗi màn/Transaction trong scope, extract đầy đủ:
 
 **Thông tin màn hình:**
 - Đường dẫn chức năng
@@ -44,35 +46,51 @@ Tìm section tương ứng với từng Use-case. Extract đầy đủ:
 **Luồng nghiệp vụ:**
 - Trích các bước từ section "Luồng nghiệp vụ" trong TLGP
 
+**Phân quyền (BẮT BUỘC phân tích ở Phase 1):**
+- Lập **bản đồ role → quyền** cho tính năng này: role nào được truy cập màn / thực hiện action nào (từ Actor trong TLGP + `knowledge/system-features.md` + suy luận nghiệp vụ).
+- Đối chiếu với **các persona trong `config/test.config.json`**: persona/role nào **KHÔNG có quyền** với tính năng này → chính là đối tượng để sinh **TC-PERM (sai quyền)**.
+- Cách hệ thống chặn khi không có quyền (menu ẩn / redirect / 403 / nút disabled) — nếu không rõ, ghi `[TBD – hỏi BA/Dev]`.
+
+### 1C. Xác nhận ngôn ngữ (bắt buộc, trước khi gen)
+
+- Hệ thống hỗ trợ những ngôn ngữ nào?
+- Ngôn ngữ chính (primary) để chạy round mặc định là gì? (mặc định: **tiếng Việt**)
+
+→ Quyết định này: round mặc định chạy ngôn ngữ nào + sau này có cần project ngôn ngữ thứ 2 (Phase 2) không. **Không sinh TC riêng cho từng ngôn ngữ** — xem `testcase_writing_rules.md` Rule 11.
+
 ---
 
 ## BƯỚC 2 — PHÂN TÍCH NGHIỆP VỤ VÀ XÁC NHẬN MAPPING
 
 ⚠️ **Bước bắt buộc trước khi xác định TC. Không được bỏ qua.**
 
-Với **mỗi Use-case** trong Excel:
+Với **mỗi Use-case / màn** đã xác định từ TLGP ở Bước 1:
 
-1. **Map sang section TLGP**: Tìm section trong TLGP tương ứng với Use-case đó
-   - Nếu **tìm thấy** → tóm tắt lại: màn hình làm gì, ai dùng, các luồng chính, dữ liệu vào/ra
-   - Nếu **không tìm thấy** → **dừng ngay, báo với user**, không tự suy đoán, không gen TC
+1. **Tóm tắt nghiệp vụ**: màn hình làm gì, ai dùng (role), các luồng chính, dữ liệu vào/ra.
+   - Nếu TLGP mô tả không đủ để suy ra TC → **dừng, báo user**, không tự suy đoán.
 
 2. **Trình bày kết quả phân tích** dạng bảng:
 
 ```
-| Use-case (Excel) | Section TLGP | Có spec? | Ghi chú |
-|---|---|---|---|
-| UC1. Khai thác DS báo cáo | Khai thác danh sách báo cáo | ✅ | ... |
-| UC2. Quản lý Lịch sử nộp BC | ??? | ❌ | Không tìm thấy section tương ứng |
+| Use-case / màn | Section TLGP | Đủ spec? | Role liên quan | Ghi chú |
+|---|---|---|---|---|
+| Danh sách báo cáo | Khai thác danh sách báo cáo | ✅ | PORTAL_ADMIN | ... |
+| Lịch sử nộp BC | (mô tả sơ sài) | ⚠️ | ? | Cần xác nhận BA |
 ```
 
-3. **Hỏi user confirm mapping** trước khi tiếp tục:
-   - Use-case nào không có TLGP → hỏi user muốn skip hay chờ spec
-   - Use-case nào mapping không chắc chắn → hỏi user xác nhận
-   - **Chỉ tiếp tục sang Bước 3 với những Use-case đã có TLGP và được confirm**
+3. **Confirm scope** trước khi tiếp tục:
+   - Màn nào TLGP không đủ spec → hỏi user (chạy độc lập) hoặc đánh ⚠️ auto-include (trong pipeline).
+   - **Chỉ gen TC cho màn đã đủ spec.**
+
+4. **Phân tích nghiệp vụ liên quan** (RULE 17) — đọc `knowledge/system-features.md`:
+   - Tìm tính năng đã ghi nhận có liên quan tới tính năng đang gen (chung entity, chung màn, nối luồng, đổi trạng thái dùng chung).
+   - Nếu có → ghi nhận để Bước 3 bổ sung TC kiểm tra **ảnh hưởng chéo**.
 
 ---
 
 ## BƯỚC 3 — XÁC ĐỊNH TEST CASE
+
+> Dùng skill `testcase-design` (ISTQB) để chọn case đủ coverage cho từng field & luồng. File này nêu *cần cover gì*; chi tiết kỹ thuật xem skill + `testcase_writing_rules.md` RULE 12–17.
 
 Với **mỗi Transaction** của Use-case đã được confirm, xác định các luồng cần cover:
 
@@ -88,6 +106,22 @@ Với **mỗi Transaction** của Use-case đã được confirm, xác định c
 
 **Unhappy Path bắt buộc với Transaction loại "xem/hiển thị danh sách":**
 - Luôn thêm case: hệ thống không có dữ liệu → kiểm tra thông báo hiển thị
+
+**Field validation — bắt buộc với MỌI form có field nhập (tạo/sửa/reset/popup) — áp ISTQB (RULE 11b + 12–15):**
+
+Với **mỗi field** trên form, duyệt theo checklist (skill `testcase-design`):
+- **Giá trị mặc định** (RULE 12) — đặc biệt màn sửa/duyệt/xoá: tự tạo→verify đúng giá trị
+- **Bắt buộc** (RULE 13) — field bắt buộc: 2 hướng (outfocus + submit); không bắt buộc: no error; clear-first nếu có default
+- **Độ dài** (RULE 14.1, BVA): min-1/min/max/max+1; **Ký tự** (RULE 14.2, EP): valid + mỗi lớp invalid
+- **Trùng dữ liệu** (RULE 15.1): tạo trước → test trùng → error exact SRS
+- **Dropdown/checkbox** (RULE 15.2): theo selected/checked; combo điều kiện → decision table
+
+Mọi message lỗi: trích **exact SRS** (RULE 2). Chỉ sinh nhánh ràng buộc mà SRS có quy định — không bịa.
+
+**Luồng nghiệp vụ — hậu điều kiện bắt buộc (RULE 16):**
+- Happy path không dừng ở thông báo — phải verify: Thêm→search ra item; Sửa→mở lại đúng; Xoá→mất khỏi list; Duyệt/Từ chối→đổi status
+- Có case "không dữ liệu" (empty state, message exact SRS); search dùng keyword lấy từ data thật
+- **Ảnh hưởng chéo** (RULE 17): nếu Bước 2 phát hiện tính năng liên quan → thêm TC kiểm tra tác động qua lại
 
 **Pagination — bắt buộc khi TLGP mô tả màn hình có phân trang:**
 
@@ -111,6 +145,25 @@ Xem quy tắc chi tiết tại `testcase_writing_rules.md` Rule 9.
 
 Xem chi tiết tại `testcase_writing_rules.md` Rule 8.
 
+**Phân quyền — bắt buộc khi Use-case có nhiều hơn 1 role/tác nhân liên quan:**
+
+Sinh nhóm `TC-PERM-*` riêng (KHÔNG trộn vào TC feature), derive từ happy path:
+- Mỗi happy path = 1 action cần bảo vệ → liệt kê action từ chính danh sách happy path
+- **Chỉ sinh phía DENY** (role không được phép). Phía allow đã được happy path chứng minh — không sinh lại
+- Gộp theo độ chặn:
+  - Role bị chặn ngay cửa → 1 TC coarse/role cho cả Use-case
+  - Role vào được nhưng giới hạn action → 1 deny-case kèm mỗi happy path bị giới hạn
+- Role để login lấy từ persona trong `config/test.config.json` — không tạo runtime
+- Biểu hiện deny ghi cụ thể (menu ẩn / redirect / 403 / nút disabled)
+
+Xem chi tiết tại `testcase_writing_rules.md` Rule 10.
+
+**Đa ngôn ngữ — KHÔNG sinh TC riêng:**
+- Mỗi TC (kể cả TC-PERM) bắt buộc có mục "Ngôn ngữ hiển thị" (xem template BƯỚC 5)
+- Mọi error/toast/dialog trích nguyên văn tiếng Việt — đây là nguồn của `t()` ở Phase 2
+
+Xem chi tiết tại `testcase_writing_rules.md` Rule 11.
+
 ---
 
 ## BƯỚC 4 — LIST TC VÀ XIN CONFIRM
@@ -127,7 +180,7 @@ Hỏi user: "Bạn confirm list này không?" — **Chỉ gen file sau khi user 
 
 ## BƯỚC 5 — GEN FILE OUTPUT
 
-Sau khi user confirm, xuất file Markdown `testcase/KBKT_UAT_[TênTínhNăng].md` với cấu trúc sau.
+Sau khi user confirm, xuất file Markdown `output/testcase/KBKT_UAT_[TênTínhNăng].md` với cấu trúc sau.
 
 ### Cấu trúc file:
 
@@ -158,7 +211,11 @@ Sau khi user confirm, xuất file Markdown `testcase/KBKT_UAT_[TênTínhNăng].m
 - Chi tiết 2
 
 3.1. [Kết quả bước 3]
+
+**Ngôn ngữ hiển thị:** Toàn bộ nội dung, nhãn trường, placeholder, nút, thông báo lỗi và toast đều hiển thị bằng tiếng Việt — không lẫn tiếng Anh, không lòi key thô (vd "error.emailExists").
 ```
+
+> Mục **"Ngôn ngữ hiển thị"** là bắt buộc với **mọi** TC (kể cả TC-PERM) — Rule 11.2. Đây là cách khẳng định ngôn ngữ ở từng case mà không sinh TC i18n riêng.
 
 ---
 
@@ -195,6 +252,22 @@ Sau khi user confirm, xuất file Markdown `testcase/KBKT_UAT_[TênTínhNăng].m
 - [ ] Mỗi Transaction đủ luồng: Happy / Alternative / Unhappy (có giải thích nếu skip)
 - [ ] Happy Path đã tách sub-case khi có nhiều variant input
 
+**Field validation (ISTQB — skill `testcase-design`)**
+- [ ] Mỗi field form đã duyệt: default (Rule 12), bắt buộc 2 hướng (Rule 13), độ dài BVA + ký tự EP (Rule 14), trùng + dropdown/checkbox (Rule 15)
+- [ ] Mọi message lỗi trích exact SRS; chỉ sinh nhánh ràng buộc SRS có quy định
+
+**Luồng nghiệp vụ & liên quan**
+- [ ] Happy path có hậu điều kiện: thêm→search, sửa→mở lại, xoá→mất, duyệt→status (Rule 16.1)
+- [ ] Có case empty-state + search từ data thật (Rule 16.3–16.4)
+- [ ] Đã đọc `knowledge/system-features.md`, thêm TC ảnh hưởng chéo nếu có, và **cập nhật file** entry tính năng vừa gen (Rule 17)
+
+**Cross-cutting (phân quyền + đa ngôn ngữ)**
+- [ ] Đã confirm ngôn ngữ ở Bước 1C (primary + danh sách hỗ trợ)
+- [ ] UC có >1 role: có nhóm TC-PERM derive từ happy path; đúng quyền test mọi case, sai quyền test happy→lỗi; gộp coarse/fine đúng (Rule 10)
+- [ ] TC-PERM ghi rõ biểu hiện deny + dùng persona từ config, không tạo runtime
+- [ ] Mọi TC (kể cả TC-PERM) có mục "Ngôn ngữ hiển thị", đồng nhất không lẫn ngôn ngữ khác (Rule 11.2)
+- [ ] Error/toast trích nguyên văn tiếng Việt, không vague (Rule 11.3); KHÔNG tạo nhóm TC i18n riêng
+
 **Nội dung TC**
 - [ ] Các bước dùng `1.  2.  3.` — không dùng "Bước 1:"
 - [ ] Kết quả gắn đúng số bước: `2.1.`, `2.2.`, `3.1.`
@@ -205,7 +278,7 @@ Sau khi user confirm, xuất file Markdown `testcase/KBKT_UAT_[TênTínhNăng].m
 - [ ] Tên TC ngắn gọn, không ghi Mã TC hay [loại luồng] trong tên
 
 **File output**
-- [ ] File lưu đúng `testcase/KBKT_UAT_[TênTínhNăng].md`
+- [ ] File lưu đúng `output/testcase/KBKT_UAT_[TênTínhNăng].md`
 - [ ] Cấu trúc heading đúng thứ bậc: `##` UC → `###` Transaction → `####` TC
 - [ ] Mỗi TC đủ 6 field: Actor, Loại luồng, Precondition, Dữ liệu mẫu, Các bước, Kết quả mong muốn
 
@@ -217,7 +290,7 @@ Sau khi user confirm, xuất file Markdown `testcase/KBKT_UAT_[TênTínhNăng].m
 Sau khi gen file `.md` xong và đã pass checklist tự review, kết thúc bằng:
 
 ```
-✅ Đã sinh testcase: testcase/<filename>.md
+✅ Đã sinh testcase: output/testcase/<filename>.md
    - X UC / Y Transaction / Z TC
 
 👉 Gõ "oke" để tự động chạy bước tiếp: **/generate-automation-from-testcases**

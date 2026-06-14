@@ -94,7 +94,7 @@ Xem checklist đầy đủ trong `generate-automation-from-testcases.md` Bước
 // BasePage.screenshot(tcId, stepLabel)
 // tcId theo format TC-{FUNC}-{NN} (xem html_report_rules.md mục 1)
 await basePage.screenshot('TC-LIST-01', '01_list_loaded');
-// → evidence/uat/admin/<module>/<function>/[TC-LIST-01][01_list_loaded].png
+// → output/evidence/uat/admin/<module>/<function>/[TC-LIST-01][01_list_loaded].png
 
 await basePage.screenshot('TC-CREATE-01', '03_after_submit');
 // → [TC-CREATE-01][03_after_submit].png
@@ -107,19 +107,19 @@ await basePage.screenshot('TC-CREATE-01', '03_after_submit');
 
 Khi cần pass dữ liệu từ **setup run** sang **test run** (vd: IDs của pre-created articles):
 
-- Setup spec ghi ra `test-results/<feature>-fixture.json`
+- Setup spec ghi ra `output/test-results/<feature>-fixture.json`
 - Test spec đọc file đó vào đầu mỗi test
-- File nằm trong `test-results/` (gitignore, không commit)
+- File nằm trong `output/test-results/` (gitignore, không commit)
 
 ```typescript
 // setup spec
-fs.writeFileSync('test-results/fixture.json', JSON.stringify(data, null, 2));
+fs.writeFileSync('output/test-results/fixture.json', JSON.stringify(data, null, 2));
 
 // test spec
 function loadFixture() {
-  if (!fs.existsSync('test-results/fixture.json'))
+  if (!fs.existsSync('output/test-results/fixture.json'))
     throw new Error('Chạy setup spec trước!');
-  return JSON.parse(fs.readFileSync('test-results/fixture.json', 'utf-8'));
+  return JSON.parse(fs.readFileSync('output/test-results/fixture.json', 'utf-8'));
 }
 ```
 

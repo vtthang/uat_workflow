@@ -1,0 +1,57 @@
+A. Các phần cần test cho nghiệp vụ :
+1. Validate cho mọi trường: 
+a. Default value:
+- Kiểm tra giá trị mặc định theo spec. Chú ý đặc biệt với những case sửa/phê duyệt/xoá cần phải test giá trị mặc định phải là giá trị đúng. Thực hiện bằng cách: 
+  + Tự tạo mới -> vào màn hình đang test để verify giá trị mặc định xem đúng giá trị đã tạo chưa
+b. Bắt buộc: 
+- Với những trường là bắt buộc -> Cần phải hiển thị message. Phải đảm bảo Message hiển thị exact với srs 
+- Vỡi nhữn trường không là bắt buộc -> cần phải đảm bảo không hiển thị error message. 
+Có 2 phần cần test như sau: 
++ Không nhập gì và clickout field đó -> hiển thị message lỗi 
++ Không nhập gía trị gì -> nhấn button Confirm/Submit 
+  Chú ý đặc biệt: Với những trường hợp giá trị default của trường khác rỗng -> cần clear rồi mới thưc hiện 2 hướng trên. 
+
+c. Max length/ mìn length 
+- Áp dụng cho mọi field có yêu cầu trong srs. Kiểm tra các case: 
++ Valid 
++ Invalid -> hiển thị error message. 
+Với các case là invalid cũng sẽ có 2 thứ cần test: 
++ Không nhập gì và clickout field đó -> hiển thị message lỗi 
++ Không nhập gía trị gì -> nhấn button Confirm/Submit 
+  Chú ý đặc biệt: Với những trường hợp giá trị default của trường khác rỗng -> cần clear rồi mới thưc hiện 2 hướng trên. 
+
+d. Kí tự hợp lệ
+- Áp dụng cho những field được yêu cầu trong srs.
++ Nếu không yêu cầu gì -> nhập mọi kí tự -> không hiển thị lỗi 
++ Nếu có những yêu cầu: cần test case valid và invalid.
+
+e. Với những case check trùng dữ liệu 
+- Cần tạo data sau đó dùng data đã có để test phần trùng. -> Hiển thị error message exact srs.
+f. Kiêm tra trong dropdown hoặc checkbox: 
+- Sẽ phụ thuộc vào gía trị checked + selected.
+g. Phân trang + điều hướng trang
+- VỚi màn hình danh sách luôn đảm bảo test phần pagination và điều hướng  trang. bao gồm: 
+  + Dropdown phân trang 
+  + Phân trang đã đúng chưa, số lượng trang đúng the tổng/ số lượng item chọn chưa ( dựa vào api response total)
+  + Điêu hướng đến đầu/cuối/tiếp theo/ trước và 1 trang bất kì
+2. Luồng nghiệp vụ 
+- Cần đi full luồng: 
++ Valid 
+  - Hiển thị thông báo exact srs 
+  - Dữ liệu được lưu chính xác: 
+   + Thêm mới: Hiển thị ở list -> search ra đúng item vừa thêm 
+   + Sửa: cần mở lại item đó, verify mọi giá trị đã update 
+   + Xoá: không tìm đợc item đó trong list
+   + Phê duyêt/từ chối: Kiểm tra lại trạng thái của item đó. 
++ invalid
+  - Kiểm tra các luồng invalid. 
+  - Riêng đối với các case không có dữ liệu, có thể dùng proxy chặn response cảu API để tạo case không có dữ liệu 
+  - Dữ liệu search thì cần chú ý là dựa trên dữ liệu có ở trong list để đảm bảo search đúng.
+3. Phần quyền: 
+ - Đúng quyền: Test mọi case
+ - Sai quyền: Test với case happy để đảm bảo hiển thị lỗi.
+4. Multiple language: 
+- Khi ở 1 language nào đó luông phải đảm bảo sẽ không có ngôn ngữ khác xuất hiện 
+5. nghiệp vụ liên quan
+- Khi test 1 nghiệp vụ cần xem xét các phần chứuc năng có liên quan trong hệ thống để xem nó có ảnh hưởng gì không hoặc có bị ảnh hưởng bởi nghiệp vụ khác không. Có thể dựa vào knowledge hệ thống. 
+- Khi tôi đưa 1 nghiệp vụ vào và bạn thực hiện test -> hãy thêm nó vào 1 file knowledge của hệ thống và khi có 1 tính năng mới cần xem xem nó có liên quan gi đến những tính năng khác không

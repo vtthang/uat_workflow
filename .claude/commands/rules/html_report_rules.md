@@ -307,7 +307,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 
 ### Input
 ```
-evidence/
+output/evidence/
   {env}/{portal}/{module}/{function}/
     {tcId}_api-calls.json           ← auto (teardownApiMonitor); main API entry có responseBody
     {tcId}_data-mapping.json        ← manual (BasePage.saveJson) — list/detail TCs
@@ -322,12 +322,12 @@ evidence/
 3. **Count** — tổng PASS/SKIP/FAIL, tổng screenshots, tổng API calls (sum entries).
 4. **Embed** — đọc từng ảnh PNG → `Buffer.from(fs.readFileSync(path)).toString('base64')`.
 5. **Render** — sinh HTML theo cấu trúc mục 2–8.
-6. **Output** — lưu `{feature}_report_{date}.html` tại root project.
+6. **Output** — lưu `output/reports/{feature}_report_{date}.html`.
 
 ### Tên file output
 ```
-{TenTinhNang}_report_{YYYY-MM-DD}.html
-Ví dụ: QuanLyNguoiDung_report_2026-06-10.html
+output/reports/{TenTinhNang}_report_{YYYY-MM-DD}.html
+Ví dụ: output/reports/QuanLyNguoiDung_report_2026-06-10.html
 ```
 
 ---
@@ -341,3 +341,19 @@ Ví dụ: QuanLyNguoiDung_report_2026-06-10.html
 - [ ] count-box có kể cả khi apiTotal = 0
 - [ ] Nav links khớp với id của func-section
 - [ ] Report tự mở được bằng cách double-click file HTML (không cần server)
+
+---
+
+## Cấu trúc HTML report bắt buộc (sinh bởi `scripts/gen_report.py`)
+
+Report PHẢI có các thành phần sau (đã code sẵn trong `scripts/gen_report.py` — dùng script này, không tự bịa lại):
+
+1. **Menu điều hướng PHÂN CẤP 2 cấp** (sidebar trái, sticky): **Tính năng (UC) > các phần trong tính năng**.
+   - Cấp 1 = UC (vd "UC3. Tạo mới") → anchor `#uc{n}`.
+   - Cấp 2 = phần (vd "Tạo mới", "Validate — Tạo mới") → anchor `#grp-<prefix>`.
+   - Mỗi mục hiện số TC + badge đỏ số FAIL. Bấm → cuộn tới section.
+2. **Bảng tổng hợp case FAIL ở ĐẦU trang** (`failbox`): liệt kê mọi TC FAIL + mô tả ngắn (actual result), mỗi dòng **link `#<TC-ID>`** → bấm điều hướng thẳng tới card case đó. Không có FAIL → hiện box xanh "Không có case FAIL".
+3. **Mỗi card TC có `id="<TC-ID>"`** (để fail-summary/menu nhảy tới được) + title + Các bước + Kết quả mong muốn + Kết quả thực tế + ảnh (trước/sau) + Data Mapping mọi cột + count-box/maxlength + API Calls (fetch/xhr, main có Full response).
+4. **Sắp xếp theo thứ tự UC trong SRS** (`UC_RANK` / `PARENTS` trong script).
+
+> Lệnh: `python3 scripts/gen_report.py <testcase.md> <evidence_root> <out.html> "<title>"`. Status P/F đọc từ marker trong file testcase. Khi đổi cấu trúc report → sửa trong `scripts/gen_report.py` (single source).
